@@ -1,2 +1,7 @@
-# sig-presentation
-Documents and communications for the O3DE Presentation Special Interest Group 
+# O3DE Presentation SIG - Meeting resources
+
+Meeting notes from the [O3DE Meetings](https://o3de.github.io/foundation/sigs/sig-presentation/).
+
+The [full table of previous meetings](https://o3de.github.io/foundation/sigs/sig-presentation/?id=previous-meetings) is available here.
+
+# General Resources
