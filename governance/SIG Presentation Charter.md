@@ -27,7 +27,6 @@ Audio
 Design and maintain architecture of engine audio API subsystem for integration.
 Publish audio hardware driver compatibility, supported versions, and requirements per platform.
 Design, produce specification, and maintain client side authoring component into 3rd party audio subsystem.
-*Need Eric Phister to clarify audio playback details
 
 AR/VR
 Design and maintain common AR & VR Architecture API for engine integration
