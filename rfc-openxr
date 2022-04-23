@@ -1,0 +1,6 @@
+## OpenXR 
+
+
+
+*Summary*
+OpenXR is an open royalty-free API standard from Khronos, providing engines with native access to a range of devices. It provides access to following API and we will need to add support for it in a modular fashion within O3DE. The api to add support for is as follows
