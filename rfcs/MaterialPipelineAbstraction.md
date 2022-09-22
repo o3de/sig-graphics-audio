@@ -43,7 +43,7 @@ Proposed Material System
 
 The material type file indicates a lighting model that it will use (i.e. Standard, Enhanced, Skin, Eye, etc.). This is a direct user choice. In a material graph, this defines the topology of the final output node. At a lower level, this selects the AZSL definition of the Surface struct. The material type also provides material code, which is partial shader code specific to the materials. This code only describes how to fill the Surface struct, or perform other simple operations like adjusting vertex position, depth, or discarding pixels.
 
-A new _material pipeline_ feature will define how materials are processed by a render pipeline. This includes shader templates for each pass, and for each lighting model, with gaps that can be filled in by the material type's code. The association between the material type and the material pipeline is indirect, and the material type can work with any pipeline. The material build system is responsible for paring each material type with the available material pipelines for compilation. The material-specific code for configuring the per-pixel Surface data is defined once, and is automatically compiled into separate shaders for each available render pipeline.
+A new _material pipeline_ feature will define how materials are processed by a render pipeline. This includes shader templates for each pass, and for each lighting model, with gaps that can be filled in by the material type's code. The association between the material type and the material pipeline is indirect, and the material type can work with any pipeline. The material build system is responsible for pairing each material type with the available material pipelines for compilation. The material-specific code for configuring the per-pixel Surface data is defined once, and is automatically compiled into separate shaders for each available render pipeline.
 
 There are scripts in each material pipeline that configure the shader compilation based on the material type that is being compiled. For example, this allows the forward pass to be used for some material types and the transparent pass to be used for others.
 
@@ -126,7 +126,7 @@ Shader Template
 
 For each pass, the material pipeline will include one or more shader templates, with gaps that will be filled by each material type. For depth passes and similar, there will only be one or two shader templates. But for lighting passes there will be at least one shader template for each of the available lighting models. (In the future, we could also abstract out the lighting model to reduce the number of shader templates, and the build system can combine them automatically like it does for the material types).
 
-The main gap that must be filled in is the material code. For now, I propose a simple comment hook called "INSERT\_MATERIAL\_FUNCTIONS" where the build pipeline will inject the code from the material type. We could do something more elegant if a better approach is presented and as time allows, but this should be a quick and simple way to get started.
+The main gap that must be filled in is the material code. For now I propose the template .azsli file will simply forward-declare the functions that should be provided by the material. The material build pipeline will generate a .azsl file that \#includes the material code and the template .azsli file to stitch the two together. (In particular we should try to avoid stitching the files together programatically as part of a code-gen process as this would complicate the asset builder's source dependencies, discussed in the "Material Shader Build System" section).
 
 The other way that shader templates are configured is through preprocessor flags (which are driven by material pipeline settings, more on this later).
 
@@ -212,8 +212,11 @@ struct VSOutput
 #endif
 };
  
-// The build system will insert the material functions from the material type that is being compiled
-// INSERT_MATERIAL_FUNCTIONS
+// Forward-declare functions that must be provided by the material type or generated
+// by the material build pipeline.
+void MaterialVertexFunction(inout float3 localPosition);
+void MaterialShadingFunction(VSOutput IN, out Surface outSurface, inout float depth);
+void MaterialDepthAndOrClippingFunction(VSOutput IN, inout float depth);
  
 VSOutput MainPassVS(VSInput IN)
 {
@@ -317,8 +320,10 @@ This depth pass example shows how MaterialDepthAndOrClippingFunction() is used. 
  
 // Other #include headers...
  
-// The build system will insert the material functions from the material type that is being compiled
-// INSERT_MATERIAL_FUNCTIONS
+// Forward-declare functions that must be provided by the material type or generated
+// by the material build pipeline.
+void MaterialVertexFunction(inout float3 localPosition);
+void MaterialDepthAndOrClippingFunction(VSOutput IN, inout float depth);
  
 VSOutput DepthPassVS(VSInput IN)
 {
@@ -352,8 +357,10 @@ Finally, an example of the transparent pass highlights how the same MaterialShad
  
 // Other #include headers, especially the lighting model...
  
-// The build system will insert the material functions from the material type that is being compiled
-// INSERT_MATERIAL_FUNCTIONS
+// Forward-declare functions that must be provided by the material type or generated
+// by the material build pipeline.
+void MaterialVertexFunction(inout float3 localPosition);
+void MaterialShadingFunction(VSOutput IN, out Surface outSurface, inout float depth);
  
 VSOutput TransparentPassVS(VSInput IN)
 {
@@ -447,15 +454,15 @@ A Material Pipeline forms the back-end for the material system, allowing materia
     *   DepthPassTransparentMax.shader.template
     *   MeshMotionVector.shader.template
 
-We can use a .template extension to prevent the Asset Processor from processing these files. Even though the .shader files themselves should be complete, the .azsli files they reference have some gaps that have to be filled in by the material shader build system.
+We can use a .template extension to prevent the Asset Processor from processing these files since they are not complete source assets.
 
 The set of shaders will include the combination of every lighting model and every render pass. When it comes time to build a material type's shaders, we need a way to tell the build system which shaders to compile, how to configure the preprocessor, or maybe perform other configuration we haven't thought of yet. So each material pipeline will expose a collection of settings to the material type, and run a script to configure the build. Examples of these settings might include _UV stream count_, _enable custom depth_, _enable pixel clipping_, _is transparent_, _transparency mode_, and/or _needs tangents_. These properties can be set in the .materialtype file and exposed in the Material Canvas UI. Of course they'll each have metadata for descriptions, data types, and visibility. In the context of Material Canvas, some settings might be exposed to the user to configure the graph, some might be hidden and configured automatically (like setting _needs tangents_ based on whether normal mapping is used), and we _might_ even allow some to be connected to material properties and exposed on a per-material basis (this would be required to make things like normal maps optional at the material level; it needs more thought).
 
-We will use Lua for these scripts because that's what material functors use. While Lua isn't necessary (python could be an option since these scripts aren't used at runtime), it should provide nice continuity because material functors use Lua.
+We will use Lua for these scripts because that's what material functors use. While Lua isn't necessary (python could be an option since these scripts aren't used at runtime), it should provide nice continuity because material functors use Lua. Also, the material pipeline might even include a script that does execute at runtime, so we should be prepared for that possibility (for example, the material pipeline might know how to enable/disable certain shaders at runtime).
 
 Each pipeline will define its own settings but there will likely be common ones where the same property name could map to multiple pipelines. For now we'll just merge the pipeline setting names from all pipelines, and assume that duplicate names will have the same usage in all pipelines. This should give the most convenient experience to the user, as there's no need to set the same value for each pipeline. If needed in the future, would could provide a way to disambiguate in case different pipelines use the same name for different things.
 
-Each setting could be connected directly to a preprocessor flag, or processed by the pipeline's script to select which shaders to enable, or show/hide other properties. (We might want to consider just always exposing every setting as a preprocessor flag rather than having to specify one explicitly in the properties list. If a setting is to be controlled automatically rather that explicitly set by the user, then there's no real reason to provide metadata for it, except to do error checking for unhandled settings. It could use more thought).
+Each setting could be connected directly to a preprocessor flag, or processed by the pipeline's script to select which shaders to compile, or show/hide other properties. (We might want to consider just always exposing every setting as a preprocessor flag rather than having to specify one explicitly in the properties list. If a setting is to be controlled automatically rather that explicitly set by the user, then there's no real reason to provide metadata for it, except to do error checking for unhandled settings. It could use more thought).
 
 **MainPipeline.materialpipeline**
 Here is an example .materialpipeline file. (Note that it also lists all the shader templates, so the asset builder can report source file dependencies).
@@ -518,50 +525,50 @@ Here is an example .materialpipeline file. (Note that it also lists all the shad
 **MaterialPipeline.lua**
 Here is an example of the script file for the above pipeline. Note there is an implicit _lightingModel_ variable that has the name of the material type's selected lighting model. (This is using pseudo-code, not actual lua, and the actual APIs might look a bit different, for example calling a GetPropertyValue\_bool("") function instead of just referencing a global variable).
 ```
-EnableShader("MeshMotionVector.shader.template")
+EnableShaderCompilation("MeshMotionVector.shader.template")
     
 SetPropertyVisible("TRANSPARENCY_MODE", IS_TRANSPARENT)
     
 if lightingModel=="Standard"
     if(IS_TRANSPARENT)
-        EnableShader("DepthPassTransparentMin.shader.template")
-        EnableShader("DepthPassTransparentMax.shader.template")
+        EnableShaderCompilation("DepthPassTransparentMin.shader.template")
+        EnableShaderCompilation("DepthPassTransparentMax.shader.template")
         if(TransparencyMode=Blended)
-            EnableShader("StandardLighting_BlendedTransparent.shader.template")
+            EnableShaderCompilation("StandardLighting_BlendedTransparent.shader.template")
         else if(TransparencyMode=TintedTransparent)
-            EnableShader("StandardLighting_TintedTransparent.shader.template")
+            EnableShaderCompilation("StandardLighting_TintedTransparent.shader.template")
     else if(ENABLE_CUSTOM_DEPTH || ENABLE_PIXEL_CLIPPING)
-        EnableShader("DepthPass_WithPs.shader.template")
-        EnableShader("ShadowPass_WithPs.shader.template")
-        EnableShader("StandardLighting_Forward.shader.template")
+        EnableShaderCompilation("DepthPass_WithPs.shader.template")
+        EnableShaderCompilation("ShadowPass_WithPs.shader.template")
+        EnableShaderCompilation("StandardLighting_Forward.shader.template")
     else
-        EnableShader("DepthPass.shader.template")
-        EnableShader("ShadowPass.shader.template")
-        EnableShader("StandardLighting_Forward.shader.template")
+        EnableShaderCompilation("DepthPass.shader.template")
+        EnableShaderCompilation("ShadowPass.shader.template")
+        EnableShaderCompilation("StandardLighting_Forward.shader.template")
 if lightingModel=="Enahanced"
     if(IS_TRANSPARENT)
-        EnableShader("DepthPassTransparentMin.shader.template")
-        EnableShader("DepthPassTransparentMax.shader.template")
+        EnableShaderCompilation("DepthPassTransparentMin.shader.template")
+        EnableShaderCompilation("DepthPassTransparentMax.shader.template")
         if(TransparencyMode=Blended)
-            EnableShader("EnhancedLighting_BlendedTransparent.shader.template")
+            EnableShaderCompilation("EnhancedLighting_BlendedTransparent.shader.template")
         else if(TransparencyMode=TintedTransparent)
-            EnableShader("StandardLighting_TintedTransparent.shader.template")
+            EnableShaderCompilation("StandardLighting_TintedTransparent.shader.template")
     else if(ENABLE_CUSTOM_DEPTH || ENABLE_PIXEL_CLIPPING)
-        EnableShader("DepthPass_WithPs.shader.template")
-        EnableShader("ShadowPass_WithPs.shader.template")
-        EnableShader("EnhancedLighting_Forward.shader.template")
+        EnableShaderCompilation("DepthPass_WithPs.shader.template")
+        EnableShaderCompilation("ShadowPass_WithPs.shader.template")
+        EnableShaderCompilation("EnhancedLighting_Forward.shader.template")
     else
-        EnableShader("DepthPass.shader.template")
-        EnableShader("ShadowPass.shader.template")
-        EnableShader("EnhancedLighting_Forward.shader.template")
+        EnableShaderCompilation("DepthPass.shader.template")
+        EnableShaderCompilation("ShadowPass.shader.template")
+        EnableShaderCompilation("EnhancedLighting_Forward.shader.template")
 else if lightingModel=="Skin"
-    EnableShader("DepthPass.shader.template")
-    EnableShader("ShadowPass.shader.template")
-    EnableShader("SkinLighting_Forward.shader.template")
+    EnableShaderCompilation("DepthPass.shader.template")
+    EnableShaderCompilation("ShadowPass.shader.template")
+    EnableShaderCompilation("SkinLighting_Forward.shader.template")
 else if lightingModel=="Eye"
-    EnableShader("DepthPass.shader.template")
-    EnableShader("ShadowPass.shader.template")
-    EnableShader("EyeLighting_Forward.shader.template")
+    EnableShaderCompilation("DepthPass.shader.template")
+    EnableShaderCompilation("ShadowPass.shader.template")
+    EnableShaderCompilation("EyeLighting_Forward.shader.template")
 ```
   
 
@@ -599,21 +606,21 @@ In order to utilize the material pipeline build system, a .materialtype file wil
 Material Shader Build System
 ----------------------------
 
-We need to decide which source file will be at the root of the material build system. It depends on which asset has the final determination of the material pipeline configuration, either the .material file or the .materialtype file. If we want to allow _per-material_ modification to pipeline settings like _is transparent_ or _is double sided_, then we would end up compiling a unique shader and/or PSO per material. This will increase developer iteration time, especially when syncing many changes. If we only allow a _material type_ to configure pipeline settings, we only need a unique shader and/or PSO per material type, which should be significantly fewer than the number of materials, resulting in fewer redundant shader compilations. However we may find this restriction to be too limiting for users. In either case we might want to look into implementing a shader de-duplication system of some kind. This needs more consideration to decide how to proceed. But for the sake of discussing the build system, let's assume that we do not allow per-material changes to the pipeline settings. In this case, the .materialtype file is the starting point for the builder.
-
-In order to build the material types, we will need a new stage of asset processing, utilizing the new intermediate assets feature: Material Type Prep Builder. This new stage will first do any code-gen or stitching that's required to produce the full set of necessary shaders that are ready for compilation. There will be a MaterialPipelineSystem class that knows the list of all available pipelines. (How we configure this system is left for another discussion, for now it can just be a registry setting with a list of .materialpipeline files for each platform). For each material pipeline, pass the lighting model name and the pipeline settings, and run the configuration script to get a list of shader templates. For each shader template, it will find the .azsl and replace "INSERT\_MATERIAL\_FUNCTIONS" with the actual material code, and also prepend the list of preprocessor definitions such as "ENABLE\_CUSTOM\_DEPTH". These .shader and .azsl files will be output as intermediate assets for the ShaderAssetBuilder to consume.
+In order to build the material types, we will need a new stage of asset processing, utilizing the new intermediate assets feature: Material Type Prep Builder. This new stage will first do any code-gen or stitching that's required to produce the full set of necessary shaders that are ready for compilation. There will be a MaterialPipelineSystem class that knows the list of all available pipelines. (How we configure this system is left for another discussion, for now it can just be a registry setting with a list of .materialpipeline files for each platform). For each material pipeline, pass the lighting model name and the pipeline settings, and run the configuration script to get a list of shader templates. For each shader template, it will find the .azsli and stitch it together with material code using \#include statements, and also prepend the list of preprocessor definitions such as "ENABLE\_CUSTOM\_DEPTH". These .shader and .azsl files will be output as intermediate assets for the ShaderAssetBuilder to consume.
 
 The final MaterialTypeAsset is going to need to reference the final ShaderAssets, which aren't ready at this stage. Somehow the AP will need to determine the final AssetIds for each shader before it can produce the final MaterialTypeAsset that references them. There needs to be a Material Type Builder job that depends on the Shader Asset Builder jobs. However, since ProcessJob is not able to create other jobs with dependencies (all it can do is output products), we can make it output another "alternate" .materialtype file to the intermediate asset folder. This alternate version will have the _lightingModel_ field removed and instead will list all the intermediate shaders that are being compiled. Then the Material Type Builder can use the list of intermediate shader files to create the necessary job dependencies, and assign the final shader AssetIds in the final MaterialTypeAsset.
 
 ![image](https://user-images.githubusercontent.com/55155825/183226371-02975e3b-0245-414f-b2c0-d1fa6c5c5e38.png)
   
-Each MaterialAsset will continue referencing a single MaterialTypeAsset to define its property layout and behavior, but can be rendered in any pipeline. Therefore, the final result from a .materialtype source file will be a _single_ MaterialTypeAsset that can run in any render pipeline, rather than a separate MaterialTypeAsset _per_ pipeline. First, the intermediate alternate .materialtype file needs to provide a list of shaders for each material pipeline rather than providing a single list of shaders. This will reference the full list of intermediate .shader files, as described above. We will also update the MaterialTypeAsset class to store a ShaderCollection per pipeline instead of just one ShaderCollection (this process will probably be similar to when the ShaderAsset class was added ShaderApiDataContainer).
+Each MaterialAsset will continue referencing a single MaterialTypeAsset to define its property layout and behavior, but can be rendered in any pipeline. Therefore, the final result from a .materialtype source file will be a _single_ MaterialTypeAsset that can run in any render pipeline, rather than a separate MaterialTypeAsset _per_ pipeline. All we need to do is add some new information to each ShaderItem in the ShaderCollection that indicates which pipeline(s) should use that shader. This will make the "alternate" .materialtype format naturally backward compatible, as the absence of this exta info means the shader can be used in any pipeline. (This also allows for the possibility of the same shader asset being used in multiple pipelines, like a common depth pre-pass).
 
-At runtime, the system will select the appropriate shaders for any given pipeline using a DrawFilterMask. The MeshDrawPacket will create separate draw packets for every pipeline that the material type can target, and call DrawPacketBuilder::SetDrawFilterMask() using the RenderPipelineId. (We will need to update the Scene class to expose the m\_drawFilterTagRegistry to convert the name to a tag).
+At runtime, the system will select the appropriate shaders for any given pipeline using a DrawFilterMask. There are several ways we could approach this. The MeshDrawPacket could create separate draw packets for every pipeline that the material type can target, and call DrawPacketBuilder::SetDrawFilterMask() using the RenderPipelineId. Or we could change the DrawPacketBuilder and DrawPacket classes to have a DrawFilterMask for each DrawItem. This latter approach is what I prototyped and it worked quite well.
 
-![image](https://user-images.githubusercontent.com/55155825/183226408-64441612-7455-473f-9934-7f91542cdd78.png)
+![image](https://user-images.githubusercontent.com/55155825/191451918-7bbde1d7-36f4-415f-98ec-b3462e29ef97.png)
 
-One more thing to keep in mind is that the Material Type Prep Builder will need to have appropriate dependencies so that if anything in a material pipeline changes, it will trigger reprocessing of all material types. Material Type Prep Builder's CreateJobs should be able to do this by asking the MaterialPipelineSystem for a list of all .materialpipeline files. These will list the pipeline script file and all of the shader template files (as described in the Material Pipeline section). Each .shader.template references the relevant .azsl file. The .azsl file must be preprocessed to discover the list of included .azsli files. All these files will be reported as source dependencies for the .materialtype. (Note that this means all template .azsl files will need to be well-formed enough for preprocessing, prior to any material type code-gen or stitching). This could cause a lot of file IO for every .materialtype file. So instead, it would probably be better to create a new Material Pipeline Builder that does not actually create any jobs, all it does is report source dependencies for all the files that the .materialpipeline references. Then the Material Type Prep Builder can just report one source dependency on each .materialpipeline file, and the AP will chain the dependencies together.
+We should also consider the possibility that a single material pipeline could target multiple render pipelines. For example, consider a VR scenario where there are two similar render pipelines, one for each eye, but only one eye renders the shadowmaps. Since the materials's shaders only use passes that are common between the two pipelines, we shouldn't have two separate material pipelines as that would double the number of shaders that have to be compiled, and those shaders would be duplicate. So the material pipeline should be able to list multiple render pipelines that it works with, or we need a tagging system separate from the render pipeline name. This could be determined at implementation time, but I would lean toward having an independent "materialPipelineTag" name.
+
+One more thing to keep in mind is that the Material Type Prep Builder will need to have appropriate dependencies so that if anything in a material pipeline changes, it will trigger reprocessing of all material types. Material Type Prep Builder's CreateJobs should be able to do this by asking the MaterialPipelineSystem for a list of all .materialpipeline files. These will list the pipeline script file and all of the shader template files (as described in the Material Pipeline section), so the builder can report these as source dependencies. Since the generated intermediate .azsl files will \#include the template .azsli file (rather than having the builder inject the material code directly into the .azsl file) there is no need to report source dependencies here. The Shader Asset Builder will automatically report the included files as dependencies just like any other azsl include file.
 
 Material Canvas Changes
 -----------------------
@@ -649,7 +656,11 @@ How will this be implemented or integrated into the O3DE environment?
 
 Initially the new features will be implemented alongside the existing material type build system and will not impact existing material types. Existing material types will continue to work, but they will not take advantage of the new pipeline abstractions and will remain bound to the default render pipeline.
 
-Any additions to the .materialtype file will be backward compatible. We will add new sections to the .materialtype file format for specifying the lighting model, material pipeline settings etc.  The existing material asset builder will ignore any .materialtype files that include these new fields, and we'll introduce a new material type asset builder that only processes those .materialtype files. This will give us time to flesh out the new system, experiment, and discover unforeseen limitations. We'll also create equivalents of the core material types (StandardPBR, EnhancedPBR, Skin, etc) under the new system. I expect that the material pipeline system will introduce some new content limitations, so the conversion might not be 1:1. For example, StandardPBR currently supports both opaque and transparent surfaces, but in the new system these might need to be separate material types. When the system reaches sufficient maturity, we will follow a deprecation process to phase out the old material types. The extent of new limitations is difficult to predict, but we will do our best to provide clear migrations paths.
+Any additions to the .materialtype file will be backward compatible. We will add new sections to the .materialtype file format for specifying the lighting model, material pipeline settings etc.  The existing material asset builder will ignore any .materialtype files that include these new fields, and we'll introduce a new material type asset builder that only processes those .materialtype files. This will give us time to flesh out the new system, experiment, and discover unforeseen limitations. We'll greadually build up equivalents of the core material types (StandardPBR, EnhancedPBR, Skin, etc) under the new system. Once those reach maturity, we will replace the old material types with these new ones. 
+
+I am optimistic that the new matrial types can be fully compatible with existing materials. Originally I expected that the material pipeline system will introduce some new content limitations, so the conversion would not be 1:1. For example, StandardPBR currently supports both opaque and transparent surfaces, but in the new system these might need to be separate material types. But I put a lot of time brainstorming the different ways we might introduce new content limitations, and I the only change I foresee is documented here https://github.com/o3de/sig-graphics-audio/issues/74 and that change should not have any significant impact on existing material data.
+
+IF we somehow discover some incompatibility, we will follow a deprecation process to phase out the old material types. The extent of any new limitations is difficult to predict, but we will do our best to provide clear migrations paths.
 
 Material Canvas will continue its current design pattern of using material graphs to automatically generate corresponding material types. We will update it to target the new material type system that supports pipeline abstraction.
 
@@ -674,15 +685,15 @@ Are there any open questions?
 
 **How will this impact existing material types?**
 
-Existing material types will continue to function a they do now, but will not take advantage of the new pipeline abstraction features. We will port Atom's core material types to the new system, and we expect users will want to do the same with any custom material types they have created. I expect that the material pipeline system will introduce some new content limitations, so the conversion might not be 1:1. The extent of these limitations is difficult to predict, but we will do our best to provide clear migrations paths.
+Existing material types will continue to function a they do now, but will not take advantage of the new pipeline abstraction features. We will port Atom's core material types to the new system, and we expect users will want to do the same with any custom material types they have created. I expect that the material pipeline system will be able to support porting most material types, but the extent of the impact to special edge-case material types is difficult to predict, and we will do our best to provide migration guidance.
 
 **Should we allow per-material properties to configure the material pipeline, or only expose material pipeline settings to material-types?**
 
-The problem with exposing these settings to individual materials is that it complicates shader compilation and permutation management. My plan is to restrict pipeline settings to the material type for now and see how far we can get. As we discover workflow problems, then we can decide how to loosen the restrictions to allow more per-material changes. For example, we don't want to end up in a situation where the user has to pick between many material types like StandardPbr, StandardPbr\_DoubleSide, StandardPbr\_Transparent, StandardPbr\_DoubleSided\_Transparent, etc. There are several ideas we could pursue, like connecting material properties to material pipeline settings, only allowing certain pipeline settings to be exposed to material types, limiting per-metarial changes to only impact render states but not shader compilation, splitting ShaderCollections into separate assets, or changing the way users select a material type. I think we can start implementing the other aspects of this system, and as we experiment with writing material types using the new material pipeline we'll gain clarity about how to address these questions.
+I was originally thinking that the material pipeline would not allow materials to configure shaders in any way, including enabling or disabling shaders. After giving this a lot of thought, I am giving up on that idea. So there is no reason to consider material properties that configure the material pipeline _build system_. However we will probably need a way for material properties to enable or disable a particular shader, like they do now, to make a material transparent or opaque. So the material pipeline will probably need some support for runtime properties/scripting in addition to its build-time properties/scripting.
 
 **How can we reduce redundant compilation of duplicate shader code?**
 
-We could reduce compilation of duplicate shaders by detecting whether the material impacts the vertex stage. In most cases it will not. So for any materials that don't use the pixel stage, and don't edit vertex data, we could pre-compile the depth-only shaders once per pipeline, and use these instead of recompiling once per material.
+We could reduce compilation of duplicate shaders by detecting whether the material impacts the vertex stage. In most cases it will not. So for any materials that don't use the pixel stage, and don't edit vertex data, we could pre-compile the depth-only shaders once per pipeline, and use these instead of recompiling once per material type.
 
 Maybe we can reduce redundant shader compilation with a new AP feature that can see if two jobs have the same source data checksums, and copy the other job's product instead of running a redundant job.
 
@@ -710,6 +721,10 @@ I have some design ideas and notes that I was working on while considering the p
 
 We have plans to move some of the TBN processing from the vertex shader to the pixel shader. I'd like to get that change in place and then take a fresh look at this question. The primary need is for vertex position manipulation (to do minor wind bending for example), and the design covers this.
 
-**What new workflows do we need to support in Material Editor to deal with new data restrictions?**
+**How will we manage shader variant trees for the many per-pipeline shaders?**
 
-For example, re-parenting or changing material types back and forth without losing your data.
+I'm hoping that we can provide some default process for enumerating system level shader options and just ignoring the material-level options. If users need more performance they could author new material types that are tailored to the necessary materials, so no material-level shader options will be needed. At least for now. Otherwise the user is going to need to manage .shadervariantlists for many generated shader assets. Maybe we should make a way for one .shadervariantlist to apply to multiple shader assets, because a collection of pipeline-specific shader assets for the same material type will have the same options.
+
+
+
+
