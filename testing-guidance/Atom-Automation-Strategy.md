@@ -4,55 +4,55 @@ The objective of automation is the robust detection of regression early, allowin
 
 Automation supports higher confidence in the quality of our product. Code coverage is a measurable proxy for confidence in code quality. While code coverage does not equate to code quality, the level of coverage correlates to perceived confidence in quality. Our atom editor unit test code coverage is below 42% with some RHI builder dll's being below 12%; the common industry objective being greater than 80%. All software has defects; given that we are not covering our code, it is likely that defects exist in the uncovered areas.
 
-*   1[Priority of Implementation](#AtomAutomationStrategy-PriorityofImplementation)
-    *   1.1[Initiatives](#AtomAutomationStrategy-Initiatives)
-        *   1.1.1[Increased unit test code coverage](#AtomAutomationStrategy-Increasedunittestcodecoverage)
-        *   1.1.2[Implement robust performance metric collection as an automated process](#AtomAutomationStrategy-Implementrobustperformancemetriccollectionasanautomatedprocess)
-        *   1.1.3[Expand support for batched test case patterns to include more tooling than just Editor](#AtomAutomationStrategy-ExpandsupportforbatchedtestcasepatternstoincludemoretoolingthanjustEditor)
-        *   1.1.4[Generate test results for inclusion in pull requests](#AtomAutomationStrategy-Generatetestresultsforinclusioninpullrequests)
-        *   1.1.5[Create sample prefabs that cover the test scenarios of major render components](#AtomAutomationStrategy-Createsampleprefabsthatcoverthetestscenariosofmajorrendercomponents)
-        *   1.1.6[Convert AtomSampleViewer feature coverage to AutomatedTesting editor project](#AtomAutomationStrategy-ConvertAtomSampleViewerfeaturecoveragetoAutomatedTestingeditorproject)
-        *   1.1.7[Review rev the engine and other workflow scenarios for additional coverage targets](#AtomAutomationStrategy-Reviewrevtheengineandotherworkflowscenariosforadditionalcoveragetargets)
-        *   1.1.8[Static Code Analysis](#AtomAutomationStrategy-StaticCodeAnalysis)
-        *   1.1.9[Dynamic Code Analysis as part of AR](#AtomAutomationStrategy-DynamicCodeAnalysisaspartofAR)
-        *   1.1.10[Expose Material Editor and Material Canvas to Multi-Test Framework](#AtomAutomationStrategy-ExposeMaterialEditorandMaterialCanvastoMulti-TestFramework)
-*   2[Test Automation Pyramid](#AtomAutomationStrategy-TestAutomationPyramid)
-*   3[Scope](#AtomAutomationStrategy-Scope)
-*   4[Risks](#AtomAutomationStrategy-Risks)
-*   5[Dependencies](#AtomAutomationStrategy-Dependencies)
-*   6[Code Coverage](#AtomAutomationStrategy-CodeCoverage)
-*   7[Performance Testing](#AtomAutomationStrategy-PerformanceTesting)
-*   8[Soak Testing](#AtomAutomationStrategy-SoakTesting)
-*   9[Fuzz Testing](#AtomAutomationStrategy-FuzzTesting)
-*   10[API Testing](#AtomAutomationStrategy-APITesting)
-*   11[Fault Injection Testing](#AtomAutomationStrategy-FaultInjectionTesting)
-*   12[Platform Testing](#AtomAutomationStrategy-PlatformTesting)
-    *   12.1[General Requirements](#AtomAutomationStrategy-GeneralRequirements)
-    *   12.2[Windows PC](#AtomAutomationStrategy-WindowsPC)
-    *   12.3[macOS](#AtomAutomationStrategy-macOS)
-    *   12.4[Linux (dedicated server and GUI based)](#AtomAutomationStrategy-Linux(dedicatedserverandGUIbased))
-    *   12.5[iOS](#AtomAutomationStrategy-iOS)
-    *   12.6[Android](#AtomAutomationStrategy-Android)
-    *   12.7[OpenXR](#AtomAutomationStrategy-OpenXR)
-*   13[Supporting Systems](#AtomAutomationStrategy-SupportingSystems)
-    *   13.1[Automated Review (AR)](#AtomAutomationStrategy-AutomatedReview(AR))
-    *   13.2[Unit/Integration Testing Using AZTest](#AtomAutomationStrategy-Unit/IntegrationTestingUsingAZTest)
-    *   13.3[CMake/Ctest](#AtomAutomationStrategy-CMake/Ctest)
-    *   13.4[Python LY\_Test\_Tools (LYTT)](#AtomAutomationStrategy-PythonLY_Test_Tools(LYTT))
-    *   13.5[Multitest Framework](#Multitest Framework (pytest related))
-    *   13.6[Editor Python Binding (EPB aka Hydra)](#AtomAutomationStrategy-EditorPythonBinding(EPBakaHydra))
-    *   13.7[PySide2](#AtomAutomationStrategy-PySide2)
-    *   13.8[AtomSampleViewer (ASV) lua driven integration tests](#AtomAutomationStrategy-AtomSampleViewer(ASV)luadrivenintegrationtests)
-    *   13.9[WARP (Windows Advanced Rasterization Platform)](#AtomAutomationStrategy-WARP(WindowsAdvancedRasterizationPlatform))
-*   14[Process Considerations](#AtomAutomationStrategy-ProcessConsiderations)
-    *   14.1[Test Qualities](#AtomAutomationStrategy-TestQualities)
-    *   14.2[Image Comparison (screenshot) Tests](#AtomAutomationStrategy-ImageComparison(screenshot)Tests)
-    *   14.3[Timeouts](#AtomAutomationStrategy-Timeouts)
-    *   14.4[Github automated tests workflow](#AtomAutomationStrategy-Githubautomatedtestsworkflow)
-    *   14.5[Credentials and Secrets](#AtomAutomationStrategy-CredentialsandSecrets)
-    *   14.6[Documentation](#AtomAutomationStrategy-Documentation)
-*   15[FAQ](#AtomAutomationStrategy-FAQ)
-    *   15.1[Q: Is there more information about this fascinating testing pyramid?](#AtomAutomationStrategy-Q:Istheremoreinformationaboutthisfascinatingtestingpyramid?)
+*   1 [Priority of Implementation](#AtomAutomationStrategy-PriorityofImplementation)
+    *   1.1 [Initiatives](#AtomAutomationStrategy-Initiatives)
+        *   1.1.1 [Increased unit test code coverage](#AtomAutomationStrategy-Increasedunittestcodecoverage)
+        *   1.1.2 [Implement robust performance metric collection as an automated process](#AtomAutomationStrategy-Implementrobustperformancemetriccollectionasanautomatedprocess)
+        *   1.1.3 [Expand support for batched test case patterns to include more tooling than just Editor](#AtomAutomationStrategy-ExpandsupportforbatchedtestcasepatternstoincludemoretoolingthanjustEditor)
+        *   1.1.4 [Generate test results for inclusion in pull requests](#AtomAutomationStrategy-Generatetestresultsforinclusioninpullrequests)
+        *   1.1.5 [Create sample prefabs that cover the test scenarios of major render components](#AtomAutomationStrategy-Createsampleprefabsthatcoverthetestscenariosofmajorrendercomponents)
+        *   1.1.6 [Convert AtomSampleViewer feature coverage to AutomatedTesting editor project](#AtomAutomationStrategy-ConvertAtomSampleViewerfeaturecoveragetoAutomatedTestingeditorproject)
+        *   1.1.7 [Review rev the engine and other workflow scenarios for additional coverage targets](#AtomAutomationStrategy-Reviewrevtheengineandotherworkflowscenariosforadditionalcoveragetargets)
+        *   1.1.8 [Static Code Analysis](#AtomAutomationStrategy-StaticCodeAnalysis)
+        *   1.1.9 [Dynamic Code Analysis as part of AR](#AtomAutomationStrategy-DynamicCodeAnalysisaspartofAR)
+        *   1.1.10 [Expose Material Editor and Material Canvas to Multi-Test Framework](#AtomAutomationStrategy-ExposeMaterialEditorandMaterialCanvastoMulti-TestFramework)
+*   2 [Test Automation Pyramid](#AtomAutomationStrategy-TestAutomationPyramid)
+*   3 [Scope](#AtomAutomationStrategy-Scope)
+*   4 [Risks](#AtomAutomationStrategy-Risks)
+*   5 [Dependencies](#AtomAutomationStrategy-Dependencies)
+*   6 [Code Coverage](#AtomAutomationStrategy-CodeCoverage)
+*   7 [Performance Testing](#AtomAutomationStrategy-PerformanceTesting)
+*   8 [Soak Testing](#AtomAutomationStrategy-SoakTesting)
+*   9 [Fuzz Testing](#AtomAutomationStrategy-FuzzTesting)
+*   10 [API Testing](#AtomAutomationStrategy-APITesting)
+*   11 [Fault Injection Testing](#AtomAutomationStrategy-FaultInjectionTesting)
+*   12 [Platform Testing](#AtomAutomationStrategy-PlatformTesting)
+    *   12.1 [General Requirements](#AtomAutomationStrategy-GeneralRequirements)
+    *   12.2 [Windows PC](#AtomAutomationStrategy-WindowsPC)
+    *   12.3 [macOS](#AtomAutomationStrategy-macOS)
+    *   12.4 [Linux (dedicated server and GUI based)](#AtomAutomationStrategy-Linux(dedicatedserverandGUIbased))
+    *   12.5 [iOS](#AtomAutomationStrategy-iOS)
+    *   12.6 [Android](#AtomAutomationStrategy-Android)
+    *   12.7 [OpenXR](#AtomAutomationStrategy-OpenXR)
+*   13 [Supporting Systems](#AtomAutomationStrategy-SupportingSystems)
+    *   13.1 [Automated Review (AR)](#AtomAutomationStrategy-AutomatedReview(AR))
+    *   13.2 [Unit/Integration Testing Using AZTest](#AtomAutomationStrategy-Unit/IntegrationTestingUsingAZTest)
+    *   13.3 [CMake/Ctest](#AtomAutomationStrategy-CMake/Ctest)
+    *   13.4 [Python LYTestTools (LYTT)](#AtomAutomationStrategy-PythonLYTestTools(LYTT))
+    *   13.5 [Multitest Framework](#Multitest Framework (pytest related))
+    *   13.6 [Editor Python Binding (EPB aka Hydra)](#AtomAutomationStrategy-EditorPythonBinding(EPBakaHydra))
+    *   13.7 [PySide2](#AtomAutomationStrategy-PySide2)
+    *   13.8 [AtomSampleViewer (ASV) lua driven integration tests](#AtomAutomationStrategy-AtomSampleViewer(ASV)luadrivenintegrationtests)
+    *   13.9 [WARP (Windows Advanced Rasterization Platform)](#AtomAutomationStrategy-WARP(WindowsAdvancedRasterizationPlatform))
+*   14 [Process Considerations](#AtomAutomationStrategy-ProcessConsiderations)
+    *   14.1 [Test Qualities](#AtomAutomationStrategy-TestQualities)
+    *   14.2 [Image Comparison (screenshot) Tests](#AtomAutomationStrategy-ImageComparison(screenshot)Tests)
+    *   14.3 [Timeouts](#AtomAutomationStrategy-Timeouts)
+    *   14.4 [Github automated tests workflow](#AtomAutomationStrategy-Githubautomatedtestsworkflow)
+    *   14.5 [Credentials and Secrets](#AtomAutomationStrategy-CredentialsandSecrets)
+    *   14.6 [Documentation](#AtomAutomationStrategy-Documentation)
+*   15 [FAQ](#AtomAutomationStrategy-FAQ)
+    *   15.1 [Q: Is there more information about this fascinating testing pyramid?](#AtomAutomationStrategy-Q:Istheremoreinformationaboutthisfascinatingtestingpyramid?)
 
   
 
@@ -63,9 +63,9 @@ The three pillars of general availability are stability, performance, and ease o
 
 This section provides an overview of our prioritization logic based on the [Test Automation Pyramid](#AtomAutomationStrategy-TestAutomationPyramid) methodology.
 
-Focus will be mostly on Windows, but automation will be written to be platform agnostic. We will work to introduce higher level cross-platform automation eventually. Unit tests will always be the most abundant contributor to Atom automation and should be platform-agnostic.
+Focus will be mostly on Windows with some emphasis on Linux, but automation will be written to be platform agnostic. We will work to introduce higher level cross-platform automation eventually. Unit tests will always be the most abundant contributor to Atom automation and should be platform-agnostic.
 
-We will accomplish this by relying as much as we can on unit tests and utilize Automated Review (AR) through LY\_Test\_Tools (LYTT) for integration tests. By focusing on O3DE wide tooling, we will avoid reinventing work that has already been done, and we will increase visibility to the wider project, since reporting and understanding will be standardized. Another benefit being simpler integration with non-Atom teams processes; our tests will be runnable without novel configuration. Regression automation will allow contributors to maintain Atom render code quality while contributing to O3DE.
+We will accomplish this by relying as much as we can on unit tests and utilize Automated Review (AR) through LYTestTools (LYTT) for integration tests. By focusing on O3DE wide tooling, we will avoid reinventing work that has already been done, and we will increase visibility to the wider project, since reporting and understanding will be standardized. Another benefit being simpler integration with non-Atom teams processes; our tests will be runnable without novel configuration. Regression automation will allow contributors to maintain Atom render code quality while contributing to O3DE.
 
 A code coverage assessment will be used to identify significant gaps in coverage and prioritize future work to fill those gaps with emphasis on unit tests as a priority.
 
@@ -119,7 +119,7 @@ since AR has built and executed code, the application of dynamic code analysis i
 
 #### Expose Material Editor and Material Canvas to Multi-Test Framework
 
-The batched execution pytest system multi-test should have ability to execute tests against tools outside of Editor.exe. New tests should be composed using the multi-test framework.
+The batched execution pytest system, [Multitest Framework](#Multitest Framework (pytest related)), should have ability to execute tests against tools outside of Editor.exe. New tests should be composed using the Multitest Framework.
 
   
 
@@ -136,15 +136,15 @@ Assuming you have the expected minimum 80% of code coverage for test automation
 
 We want to insist on highest standards, but balance that with frugality and deliver results since unlimited time and resources are not available. Investing in the most cost efficient unit tests will reap the highest return. Maintaining a healthy level of integration tests will achieve confidence in full stack systems but should not be at the expense of unit tests.
 
-  
 
-![The Inverted Pyramid](/images/test_automation_pyramid_inverted.png)
+
+_(image of inverted pyramid here)_
 
 **The Inverted Pyramid or "ice cream cone" - Inefficient approach to test automation.**
 
   
 
-![Test Automation Pyramid](/images/test_automation_pyramid.png)
+_(image of testing pyramid here)_
 
 **Test Automation Pyramid - the preferred way to plan test automation in the pipeline.**
 
@@ -158,7 +158,7 @@ Atom is not responsible for establishing a build pipeline code coverage solution
 Risks
 -----
 
-limited GPU capacity for test automation. Fewer tests can run on null renderer since actually rendering output is the ultimate objective of a render pipeline.
+Limited GPU capacity for test automation. Fewer tests can run on null renderer since actually rendering output is the ultimate objective of a render pipeline.
 
 Editor Python Bindings (Hydra) tests are dependent on UX consistency for may of their functions. Changes like the removal of non-uniform scaling can introduce failures in existing automation.
 
@@ -186,7 +186,7 @@ Code Coverage obtained manually is a critical source of gap analysis to identify
 
 Developers should install OpenCPPCoverage visual studio plugin and check coverage for their tests to identify and augment gaps. Developers should include information about code coverage in code reviews.
 
-![OpenCPPCoverage VS2019 plugin](/images/OpenCPPCoverage.png)
+_(image of OpenCPPCoverage plugin here)_
 
 Performance Testing
 -------------------
@@ -281,7 +281,7 @@ As part of AR, LYTT tests suites are declared in CmakeLists.txt files for discov
 
 *   [Getting Started with Test Automation](https://www.o3de.org/docs/user-guide/testing/getting-started/)
 
-### Python LY\_Test\_Tools (LYTT pytest)
+### Python LYTestTools (LYTT pytest)
 
 Priority: High (used by other methods for inclusion in AR and other systems)
 
