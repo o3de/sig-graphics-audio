@@ -1,4 +1,4 @@
-  
+#Atom Renderer Automation Strategy
 
 The objective of automation is the robust detection of regression early, allowing correction before issues integrate with other systems. If we allow regressions to persist, consumers of our code may inadvertently code to them, causing a negative outcome to the quality of the product. An ancillary objective of automation is the detection of previously unknown defects during the initial creation of automation.
 
@@ -259,8 +259,6 @@ Supporting Systems
 
 ### Automated Review (AR)
 
-Priority: Highest
-
 Owner: O3DE outside of Atom
 
 A required check for merge of github PR. This system builds and runs an automation suite that gates code. On the PR page this is labeled `continuous-integration/jenkins/pr-merge` 
@@ -283,8 +281,6 @@ As part of AR, LYTT tests suites are declared in CmakeLists.txt files for discov
 
 ### Python LYTestTools (LYTT pytest)
 
-Priority: High (used by other methods for inclusion in AR and other systems)
-
 Owner: O3DE outside of Atom
 
 LyTestTools is a pytest based framework for running tests. This can manage fixtures and launch application under test. This provides common functionality for path resolution and other utilities used by other systems.
@@ -303,8 +299,6 @@ Multitest Framework includes support for Material Editor, Canvas Editor, and exp
 
 ### Editor Python Binding (EPB aka Hydra)
 
-Priority: Medium/Low
-
 Cons:
 
 *   Only supports in editor testing on platforms that will run editor. Will not work on mobile or game launcher only platforms.
@@ -320,17 +314,13 @@ This is close to but not strictly UI testing since it typically uses ebus interf
 
 *   [Automating the O3DE Editor with the Python Editor Bindings gem](https://www.o3de.org/docs/user-guide/editor/editor-automation/)
 
-### PySide2
-
-Priority: Low
+### PySide2 and QtPy
 
 Owner: O3DE outside of Atom
 
 Qt solution for python to reach editor controls not exposed to EPB. This should be used as a last resort since it is straight up UI automation which can be fragile and has a high cost of maintenance.
 
 ### AtomSampleViewer (ASV) lua driven integration tests
-
-Priority: Medium
 
 Owner: Atom
 
@@ -341,8 +331,6 @@ Lua exposed functionality to run AtomSampleViewer samples with built-in image co
 Because this is a separate project repository, the entry requirement means this may not be utilized by developers. An effort is planned to move testing from ASV to AutomatedTesting project in core O3DE. ASV will continue to be a platform for developing new features but automation will transition to core O3DE.
 
 ### WARP (Windows Advanced Rasterization Platform)
-
-Priority: Extremely Low
 
 Pros:
 
@@ -357,9 +345,9 @@ Cons:
 *   Since this is a different DX adaptor than the standard one, there are a number of compatibility issues that require fixing (in theory there shouldn't be, but there are crashes)
 *   Microsoft has no clear intention to support this with required fixes to enable its use.
 
-Owner: Microsoft but working with this as a RHI layer is on Atom
+Owner: Microsoft but this appears to be inactive
 
-Cost of GPU test instances means that if we want to avoid bottlenecks of instance availability we must utilize software rasterized tests wherever possible. 
+Cost of GPU test instances means that if we want to avoid bottlenecks of instance availability we must utilize software rasterized tests wherever possible. Because of limitations an inactive support we should not spend time on this solution.
 
 Running with WARP command line argument
 
