@@ -1,4 +1,4 @@
-#Atom Renderer Automation Strategy
+# Atom Renderer Automation Strategy
 
 The objective of automation is the robust detection of regression early, allowing correction before issues integrate with other systems. If we allow regressions to persist, consumers of our code may inadvertently code to them, causing a negative outcome to the quality of the product. An ancillary objective of automation is the detection of previously unknown defects during the initial creation of automation.
 
