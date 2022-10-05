@@ -299,8 +299,6 @@ Multitest Framework includes support for Material Editor, Canvas Editor, and exp
 
 ### Editor Python Binding (EPB aka Hydra)
 
-Priority: Medium/Low
-
 Cons:
 
 *   Only supports in editor testing on platforms that will run editor. Will not work on mobile or game launcher only platforms.
