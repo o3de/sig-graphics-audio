@@ -139,10 +139,12 @@ We want to insist on highest standards, but balance that with frugality and deli
 
 
 ![test_automation_pyramid_inverted](https://user-images.githubusercontent.com/26234397/194173309-f95f0797-8b72-4e24-b680-ddceec08e169.png)
+
 **The Inverted Pyramid or "ice cream cone" - Inefficient approach to test automation.**
 
 
 ![test_automation_pyramid](https://user-images.githubusercontent.com/26234397/194173519-c42b4178-887e-41d0-892d-9f2c753c02da.png)
+
 **Test Automation Pyramid - the preferred way to plan test automation in the pipeline.**
 
 Scope
