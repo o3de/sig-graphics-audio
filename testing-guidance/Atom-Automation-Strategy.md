@@ -1,4 +1,4 @@
-#Atom Renderer Automation Strategy
+# Atom Renderer Automation Strategy
 
 The objective of automation is the robust detection of regression early, allowing correction before issues integrate with other systems. If we allow regressions to persist, consumers of our code may inadvertently code to them, causing a negative outcome to the quality of the product. An ancillary objective of automation is the detection of previously unknown defects during the initial creation of automation.
 
@@ -138,13 +138,12 @@ We want to insist on highest standards, but balance that with frugality and deli
 
 
 
-_(image of inverted pyramid here)_
+![inverted pyramid](file:///test_automation_pyramid_inverted.png)
 
 **The Inverted Pyramid or "ice cream cone" - Inefficient approach to test automation.**
 
   
-
-_(image of testing pyramid here)_
+![test automation pyramid](file:///test_automation_pyramid.png)
 
 **Test Automation Pyramid - the preferred way to plan test automation in the pipeline.**
 
@@ -186,7 +185,7 @@ Code Coverage obtained manually is a critical source of gap analysis to identify
 
 Developers should install OpenCPPCoverage visual studio plugin and check coverage for their tests to identify and augment gaps. Developers should include information about code coverage in code reviews.
 
-_(image of OpenCPPCoverage plugin here)_
+![OpenCPPCoverage plugin](file:///OpenCPPCoverage.png)
 
 Performance Testing
 -------------------
