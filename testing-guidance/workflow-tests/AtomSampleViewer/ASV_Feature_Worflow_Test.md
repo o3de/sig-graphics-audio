@@ -49,7 +49,7 @@ The specific samples that are covered by this test are:
 **Suggested Time Box:** 
  - 3 Minutes to 10 minutes per sample depending on sample complexity.
 
-###Test procedure:
+### Test procedure:
 In order to execute this test, you will need to run each Features sample in the above list though the following workflow test twice.
  - First run uses DX12 API, to do this you just need to launch AtomSampleViewerStandalone.exe directly
  - Second run will use Vulkan API, which means you need to run AtomSampleViewerStandalone.exe with the --Features=vulkan parameter.
