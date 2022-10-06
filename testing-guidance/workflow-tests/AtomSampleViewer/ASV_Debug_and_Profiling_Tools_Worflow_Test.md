@@ -36,7 +36,7 @@ The tools that are covered by this test are:
 **Suggested Time Box:** 
  - 5 to 10 minutes per tool.
 
-###Test procedure:
+### Test procedure:
 In order to execute this test, you will need to run each debug and profiling tool in the above list though the following workflow test twice.
  - First run uses DX12 API, to do this you just need to launch AtomSampleViewerStandalone.exe directly
  - Second run will use Vulkan API, which means you need to run AtomSampleViewerStandalone.exe with the --Debug and Profiling Tools=vulkan parameter.
