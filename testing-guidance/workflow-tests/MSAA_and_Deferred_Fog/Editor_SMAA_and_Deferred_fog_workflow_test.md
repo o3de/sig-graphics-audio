@@ -76,7 +76,7 @@ There are currently two types of Anti-Aliasing supported by O3de: MSAA ("Multi S
 | 4. Enable Fog Layer | Toggle the Enable Fog Layer on | <ul><li>Fog height and distance value are applied to fog in viewport</li></ul>  |
 | 5. Adjust fog height and distance | Change Fog Start Distance, Fog End Distance, Fog Bottom Height, and Fog top height to different sets of values | <ul><li>Changes fog changes in viewport appropriately, and reflect the settings you adjusted![Height_Start_end](https://user-images.githubusercontent.com/79114701/197056079-dc70bbb9-c3ed-4b97-84ca-136da3ed0ecc.png)
  </li></ul>  |
-| 6. Enable Turbulence Properties | Toggle Turbulence Properties on | <ul><li>Turbulence noise values are applied to fog in viewport ![Turbulance](https://user-images.githubusercontent.com/79114701/197056153-b8527523-b202-496f-af74-f6b737082b30.png)
+| 6. Enable Turbulence Properties | Toggle Turbulence Properties on | <ul><li>Turbulence noise values are applied to fog in viewport![Turbulance](https://user-images.githubusercontent.com/79114701/197056153-b8527523-b202-496f-af74-f6b737082b30.png)
 </li></ul>  |
 | 7. Adjust Noise Texture settings, and Octaves blend factor | Adjust Noise Texture First Octave Scale, Noise Texture First Octave Velocity, Noise Texture Second Octave Scale, Noise Texture Second Octave Velocity, and Octaves Blend Factor | <ul><li>The appearance of the fog turbulence is changed in the viewport with each setting change, no abrupt falloff. </li></ul>  |
 
