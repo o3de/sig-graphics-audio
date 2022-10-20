@@ -40,7 +40,6 @@ There are currently two types of Anti-Aliasing supported by O3de: MSAA ("Multi S
 ---
 
 # Deferred Fog Workflow Tests
-Deferred Fog
 
 ## General Docs
 * [Environment World Building](https://github.com/o3de/sig-graphics-audio/wiki/Environment-%7C-World-Building---Atom-Workflow-Test-Plan)
