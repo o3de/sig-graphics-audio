@@ -1,0 +1,82 @@
+# Editor component Decal Workflow Tests
+Testing in this area should focus on the Editor Decal component.
+
+## General Docs
+* [Feature Workflows](https://github.com/o3de/sig-graphics-audio/wiki/Feature-Workflows---Atom-Test-Plans)
+
+## Common Issues to Watch For
+ - Crashes, soft-locks, hangs when launching Editor.exe or adding a component.
+ - Corruption or unexpected distortion of the decal image
+
+## Workflows
+
+### Area: Decal Workflow
+
+**Project Requirements**
+1. You have built the O3de project:  
+* https://github.com/o3de/o3de
+2. You have verified you are set to the AutomatedTesting project
+3. Launch AssetProcessor.exe and wait for it to process all assets 
+
+
+**Editor Platforms:**
+* Windows (DX12 and Vulkan)
+* Linux (Vulkan only)
+
+**Product:** 
+ - You have completed the workflow and logged any issues found.
+
+**Suggested Time Box:** 15 minutes per platform. Note that the workflow below is the basic steps, feel free to experiment with other settings during the remaining time.
+
+| Workflow                     | Requests           | Things to Watch For |
+|------------------------------|--------------------|---------------------|
+| 1. Launch Editor | Launch Editor.exe, and create a new level with default settings | <ul><li>Editor launches without issue, and new default level can be created </li></ul>  |
+| 2. Add two entities with a decal component | Add two new entities to the level, then add a Decal component | <ul><li>Entity created, and components added successfully</li></ul>  |
+| 3. Set a material to each component | Assign one of the *.material files to each of the Decal component from: AutomatedTesting\Gem\Sponza\Assets\objects, move the decal entities so they project on the ground plane | <ul><li>Material can be assigned to each decal component, material image projects without distortion. Example:</li></ul>  |
+| 4. Adjust opacity of each decal | Adjust the opacity slider to between 0 and 1 for each decal, observe results, then set both back to 1 when done | <ul><li>Opacity of decal changes based on setting value (0 is fully transparent 1 is fully opaque), image projects without distortion. Example: </li></ul>  |
+| 5. Adjust the Attenuation Angle on each decal | Move one decal so it is projecting on the shaderball, and rotate the other decal entity about 20 degrees on the X and/or Y axis. Adjust the Attenuation Angle slider to between 0 and 1 for each decal, observe results, then set both back to 1 when done | <ul><li>Opacity changes based on angle of projection, material image projects without distortion. Example: </li></ul>  |
+| 6. Adjust the Normal Map Opacity | Select the decal projecting on the shaderball. Adjust the Normal Map Opacity slider to between 0 and 1 for the decal, observe results, then set it back to 1 when done | <ul><li>Opacity changes where the decal projects on the curved surfaces of the shaderball, material image projects without distortion. Example: </li></ul>  |
+| 7. Adjust the Sort Key | Select the decal you rotated earlier, set the rotation values back to 0,0,0, then move it so it projects on the same surface as the other decal. Adjust the Sort Key value of the decal to above and below 16 (which is the default value that the other decal should be set to) observe results. | <ul><li> Decal with the higher sort key value appears on top, material image projects without distortion. Example: </li></ul>  |
+---
+
+# Editor component Cloth Workflow Tests
+Testing in this area should focus on the Editor Cloth component.
+
+## General Docs
+* [Additional Cloth workflow tests](https://github.com/o3de/sig-graphics-audio/wiki/Additional-Cloth-workflow-tests)
+* [Cloth Component](https://www.o3de.org/docs/user-guide/components/reference/physx/cloth/)
+* [Cloth for Actor components](https://www.o3de.org/docs/user-guide/interactivity/physics/nvidia-cloth/actors/)
+* [Cloth for Mesh components](https://www.o3de.org/docs/user-guide/interactivity/physics/nvidia-cloth/meshes/)
+
+## Common Issues to Watch For
+ - Crashes, soft-locks, hangs when launching Editor.exe or adding a component.
+
+## Workflows
+
+### Area: Cloth Workflow
+
+**Project Requirements**
+1. You have built the O3de project:  
+* https://github.com/o3de/o3de
+2. You have verified you are set to the AutomatedTesting project
+3. Launch AssetProcessor.exe and wait for it to process all assets 
+
+
+**Editor Platforms:**
+* Windows (DX12 and Vulkan)
+* Linux (Vulkan only)
+
+**Product:** 
+ - You have completed the workflow and logged any issues found.
+
+**Suggested Time Box:** 25 minutes per platform. Note that the workflow below is the basic steps, feel free to experiment with other settings during the remaining time.
+
+| Workflow                     | Requests           | Things to Watch For |
+|------------------------------|--------------------|---------------------|
+| 1. Launch Editor, load the cloth mesh test level | Launch Editor.exe, and load the level "NvCloth_AddClothSimulationToMesh" | <ul><li>Editor launches without issue, and test level loads </li></ul>  |
+| 2. Adjust cloth mesh prefab settings  | Adjust cloth component properties for mesh prefabs, enter gameplay, and observe results. Repeat several times | <ul><li>Cloth properties change based on the settings changed (see [Cloth Component](https://www.o3de.org/docs/user-guide/components/reference/physx/cloth/) for property descriptions) </li></ul>  |
+| 3. Launch Editor, load the cloth actor test level | Launch Editor.exe, and load the level "NvCloth_AddClothSimulationToActor" | <ul><li>Editor launches without issue, and test level loads </li></ul>  |
+| 4. Adjust cloth prefab settings on chicken actor | Adjust cloth component properties for actor prefabs, enter gameplay, and observe results. Repeat several times | <ul><li>Cloth properties change based on the settings changed (see [Cloth Component](https://www.o3de.org/docs/user-guide/components/reference/physx/cloth/) for property descriptions) </li></ul>  |
+| 5. Run additional cloth workflows if time allows | Review above general cloth docs and if run the following [Additional Cloth workflow tests](https://github.com/o3de/sig-graphics-audio/wiki/Additional-Cloth-workflow-tests) | <ul><li>You can import meshes from DCC tools and apply cloth properties </li></ul>  |
+---
+
