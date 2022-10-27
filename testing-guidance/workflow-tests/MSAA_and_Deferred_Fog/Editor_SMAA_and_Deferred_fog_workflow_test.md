@@ -1,5 +1,5 @@
 
-# AtomSampleViewer SMAA Workflow Tests
+# Editor component SMAA Workflow Tests
 There are currently two types of Anti-Aliasing supported by O3de: MSAA ("Multi Sample Anti-Aliasing"), and SMAA ("Subpixel Morphological Anti-Aliasing"). MSAA is enabled by default in Editor, while SMAA requires a change to a configuration file to enable. This test will be focused on SMAA, MSAA functionality is covered by the MSAA samples in AtomSampleViewer. 
 
 ## General Docs
@@ -11,7 +11,7 @@ There are currently two types of Anti-Aliasing supported by O3de: MSAA ("Multi S
 
 ## Workflow
 
-### Area: SMAA WORKFLOW
+### Area: SMAA workflow
 
 **Project Requirements**
 1. You have built the O3de project:  
@@ -27,7 +27,7 @@ There are currently two types of Anti-Aliasing supported by O3de: MSAA ("Multi S
 **Product:** 
  - You have completed the workflow and logged any issues found.
 
-**Suggested Time Box:** 10 minutes per platform.
+**Suggested Time Box:** 10 minutes per platform. Note that the workflow below is the basic steps, feel free to experiment with other settings during the remaining time.
 
 | Workflow                     | Requests           | Things to Watch For |
 |------------------------------|--------------------|---------------------|
@@ -39,7 +39,7 @@ There are currently two types of Anti-Aliasing supported by O3de: MSAA ("Multi S
 
 ---
 
-# Deferred Fog Workflow Tests
+# Editor component Deferred Fog Workflow Tests
 
 ## General Docs
 * [Environment World Building](https://github.com/o3de/sig-graphics-audio/wiki/Environment-%7C-World-Building---Atom-Workflow-Test-Plan)
@@ -50,7 +50,7 @@ There are currently two types of Anti-Aliasing supported by O3de: MSAA ("Multi S
 
 ## Workflow
 
-### Area: Deferred Fog WORKFLOW
+### Area: Deferred Fog workflow
 
 **Project Requirements**
 1. You have built the O3de project:  
@@ -66,7 +66,7 @@ There are currently two types of Anti-Aliasing supported by O3de: MSAA ("Multi S
 **Product:** 
  - You have completed the workflow and logged any issues found.
 
-**Suggested Time Box:** 20 minutes per platform.
+**Suggested Time Box:** 20 minutes per platform. Note that the workflow below is the basic steps, feel free to experiment with other settings during the remaining time.
 
 | Workflow                     | Requests           | Things to Watch For |
 |------------------------------|--------------------|---------------------|
