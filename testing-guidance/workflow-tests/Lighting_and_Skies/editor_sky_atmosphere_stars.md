@@ -2,7 +2,7 @@
 Testing in this area should focus on the Sky Atmosphere and Stars components.
 
 ## **General Docs**
-* [Feature Workflows](https://github.com/o3de/sig-graphics-audio/wiki/Feature-Workflows---Atom-Test-Plans)
+* [O3DE Learn: Stars Component](https://www.o3de.org/docs/user-guide/components/reference/atom/stars/)
 
 ## Common Issues to Watch For
  - Crashes, soft-locks, hangs when launching Editor.exe or adding a component.
