@@ -134,6 +134,7 @@ However, what happens to data the exists directly in the ObjectSrg, which may or
 -- This can be done in a couple of different ways.
 ---- Manage it in 'user space'. That is the TransformServiceFeatureProcessor can be modified to take a ShaderResourceGroupLayout as input when acquiring an object ID, and it can manage separate buffers. Instead of going through the ObjectSrg directly to update data, systems would need to go through the TransformServiceFeatureProcessor or some other system to find the correct buffer and update the per-object data in the correct place using the object ID.
 ---- Modify the ShaderResourceGroup system to handle this implicitly. Effectively, we want the same behavior out of the MaterialSrg as well, so that we can do bindless rendering without needing to modify the shader authoring significantly when accessing per-material data via the MaterialSrg. This is a good long term solution, but we need to determine if this can work on all hardware/platforms we support. It also requires more effort, and ideally we don't want this as a dependency for instancing.
+------ This is described in the indirect bindings RFC https://github.com/o3de/sig-graphics-audio/pull/17.
 
 My proposal is to start with 1 in the intial commit, followed by support for 2. Then long term implement option 4.
 
