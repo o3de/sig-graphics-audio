@@ -14,11 +14,15 @@ This RFC describes a proposed approach to instancing any object that is using th
 
 The main complication that is added when supporting instanced draw calls is that for each view, the instances that are visible can change from frame to frame, but the SV_InstanceID that is visible in the shader is always indexed from 0, 1, ..., N - 1, where N is the number of instances being drawn. You cannot use this index to directly look up data from a stable persistant buffer, because the visible objects are not always the same. Consider this example:
 
+![image](https://github.com/amzn-tommy/sig-graphics-audio/tree/patch-1/rfcs/MeshInstancingRFC_View.PNG)
+
 For an instanced draw call with 2 visible instances, the shader will be executed with SV_InstanceID 0 and 1. But the shader needs to look up the transforms for instances 1 and 3. To manage this the cpu needs to update an instance buffer each frame. This instance buffer could be updated to contain the transforms for instances 1 and 3 directly. However, for each instance there is an object-to-world, object-to-world-inverse-transpose, and object-to-world-history transform. There is also potential for additional per-instance data.
 
 Since the transforms are already managed in a buffer where they can be looked up by object ID, I am proposing that the dynamic per-instance data consist of only the object ID. The shader can then look up the object ID via the SV_InstanceID, and using the object ID, look up the transforms.
 
 ## MeshInstanceManager
+
+![image](https://github.com/amzn-tommy/sig-graphics-audio/tree/patch-1/rfcs/MeshInstancingRFC_MeshInstancManager.PNG)
 
 The MeshInstanceManager is a simple map that keeps track of what can be instanced together, which I refer to as an instance group. It returns an InstanceGroupIndex that can be used to access the data that is shared between all instances in an instance group. The MeshFeatureProcessor will then use the results of CPU per-object culling to create and update the per-view buffers that contain the object IDs of all the instances that are visible in that view. The object IDs from each instance group are contiguous, and the draw call for each instance group will have a root constant that contains the offset into this per-view data where the instance group starts. Thus, the object ID for a given instance can be indexed by per-draw offset + SV_InstanceID. 
 
