@@ -2,7 +2,9 @@
 Testing in this area should focus on the Editor HDRi Skybox, and physical sky components.
 
 ## **General Docs**
-* [Feature Workflows](https://github.com/o3de/sig-graphics-audio/wiki/Feature-Workflows---Atom-Test-Plans)
+* [O3DE Learn: HDRi Skybox](https://www.o3de.org/docs/user-guide/components/reference/atom/hdri-skybox/)
+* [O3DE Learn: Global Skylight (IBL)](https://www.o3de.org/docs/user-guide/components/reference/atom/global-skylight-ibl/)
+* [O3DE Learn: Physical Sky](https://www.o3de.org/docs/user-guide/components/reference/atom/physical-sky/)
 
 ## Common Issues to Watch For
  - Crashes, soft-locks, hangs when launching Editor.exe or adding a component.
@@ -29,7 +31,7 @@ HDRi Skybox Workflow Steps
 
 Global Skylight Image-Based Lighting (IBL) - This rendering technique lights a scene using by capturing and omnidirectional light information from an image. This is then projected on a dome to simulate lighting for objects present in the scene.
 
-High dynamic range image (HDRi) Skybox - An HDR image of the sky, horizon, and distant background objects placed into a cube map texture. This is then projected onto a large cube that surrounds the level geometry.
+High dynamic range image (HDRi) Skybox - An HDR image of the sky, horizon, and distant background objects placed into a cube map texture. This is then projected onto a large cube that surrounds the level geometry.
 
 | Workflow                                                           | Requests                                                                                                                                                                                                     | Things to Watch For                                                                                       |
 |--------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
@@ -72,8 +74,7 @@ Create a Modular Physical Sky Workflow Steps
 |------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
 | 1. Launch Editor and create new level                | Launch Editor.exe, and create a new level with default settings                                                                                                           | <ul><li>Editor launches without issue, and new default level can be created </li></ul> |
 | 2. Create Entity for the Physical sky                | <ul><li> Create an entity, and name it Physical Sky <ul><li> zero out the transforms<li> Add Physical Sky Component<li> Add Deferred Fog Component <li>  Add PostFX Layer | <ul><li>All three components can be added to the Physical Sky Entity </li><ul> |
-| 3. Add the Sun as a child to the Physical sky Entity | <ul><li>Add the Sun under the Physical sky, making the sun the child of the Physical Sky <ul><li> Zero out the Sun Transforms                                             | <ul><li>Now you will have a modular Physical Sky <li> Example: <ul>   ![modSky](https://user-images.githubusercontent.com/41299597/213295047-e3df3157-2756-4f7d-8f2e-1fb5e8cb7fa0.png)
-                                    |
+| 3. Add the Sun as a child to the Physical sky Entity | <ul><li>Add the Sun under the Physical sky, making the sun the child of the Physical Sky <ul><li> Zero out the Sun Transforms                                             | <ul><li>Now you will have a modular Physical Sky <li> Example: <ul>   ![modSky](https://user-images.githubusercontent.com/41299597/213295047-e3df3157-2756-4f7d-8f2e-1fb5e8cb7fa0.png) |
 ---
 
 
