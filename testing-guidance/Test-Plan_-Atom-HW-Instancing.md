@@ -1,4 +1,4 @@
-# Test Plan: Hardware Instancing of Mesh Draw Calls
+# Test Plan: Mesh Instancing of Draw Calls
 ### **1.0 Introduction:**
 
 Hardware Instancing is a method of reducing draw calls by bundling repeated instances of mesh and material within a scene or view. This plan covers high level risk mitigation plans for this feature as a two phase implementation.
@@ -10,55 +10,46 @@ Hardware Instancing is a method of reducing draw calls by bundling repeated inst
 ### **2.0 Defect Tracking Issues:**
 
 Bugs will be tracked with Github Issues (GHI) primarily entered in [https://github.com/o3de/o3de](https://github.com/o3de/o3de).
-Labels will include `kind/bug`, `feature/graphics`, `sig/graphics-audio`, and initially `needs-triage`.
+Labels will include `kind/bug`, `feature/graphics/mesh`, `sig/graphics-audio`, and initially `needs-triage`.
 
 ### **3.0 Test Schedule and Entry Criteria:**
 
 ##### **3.1 Remaining Test Tasks:**
 
+###### **Phase 1**
+- Configuration flag(s) and any console variables (cvar) used for testing, enabling and disabling the feature
+
+###### **Phase 2**
 - Creation of a mobile scaled level 1K_instanced_mesh or equivalent.
 - Hooks for fetching instanced draw call count that work with `-rhi=null`
 - Mobile devices ready to test
-- Configuration flag(s) and any console variables (cvar) used for testing, enabling and disabling the feature
 - Creation of an Editor Python Bindings test automation case in AutomatedTesting project
 - Profiling and benchmarking on Android and iOS devices
 
 ##### **3.2 Test Entry Criteria**
 
-This section should be used to determine the entry criteria for accepting the software into test. These should be measurable items, each with an assigned owner. Examples include:
-
+###### **Phase 1**
 - Build is free of errors for both DLY_UNITY_BUILD ON and OFF
 - Unit tests have been written and pass consistently
 - Configuration and cvars are available
+
+###### **Phase 2**
 - Mobile devices are available for Android and iOS
 - Any blocking platform issues are addressed or scope of testing is changed to address open issues
 - Hooks for feature testing are available
 
 ### **4.0 Risks:**
 
-Identify what the critical risk areas are as identified through the Risk Analysis process defined by the QA team, such as:
-
-1.  Delivery of a third party product.
-2.  Ability to use and understand a new package/tool, etc.
-3.  Extremely complex functions
-4.  Modifications to components with a past history of failure
-5.  Poorly documented modules or change requests
-6.  Misunderstanding of original requirements
-7.  Complexity of integration
-8.  Dependency on other high risk modules
-9.  Defects introduced from outside of this effort
-10.  Bottlenecks or disruptions related to Automation framework
-
 Risks are scored using a risk assessment matrix of impact and likelihood https://en.wikipedia.org/wiki/Risk_matrix
 
-| Risk                                                                                                                                   | Mitigation                                                                                                                                        | Detection Method                                                                                                                                                                 | Notes                          | Impact      | Likelihood | Risk Level     |
-|----------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------|-------------|------------|----------------|
-| Splitting implementation may mean that we don't see full scope of impact to other platforms and performance                            | Consider disabling HW instancing on platforms not specifically profiled or tested                                                                 | hard to detect what we don't look for                                                                                                                                            | Phase 1 initial implementation |             |            |                |
-| Mobile performance may be degraded by HW instancing                                                                                    | Possibly disable HW instancing on mobile and other platforms.  <br>Use profiling to isolate causes of performance impact and seek to address them | We will use deployed test levels on mobile devices to measure frame time impact and draw call count to ensure performance is not impacted. Contract testers will conduct testing | Phase 2                        | significant | possible   | 14 - medium    |
-| iOS may be untestable                                                                                                                  | we will test only on android if iOS is untestable and accept risk that android and iOS are comparable for impact to performance                   | existing GHI blocking iOS and contract testers attempting to deploy                                                                                                              | Phase 2                        | marginal    | eliminated | 0 - none       |
-| Getting draw call counts may not be possible when `-rhi=null` which would mean automation would depend on GPU nodes that are expensive | Worst case we can focus automation on stability when HW instancing is active. Essentially not testing integration functionality.                  | Prototype case review. Exploratory automation                                                                                                                                    | Phase 2                        | marginal    | unlikely   | 2 - negligible |
-|                                                                                                                                        |                                                                                                                                                   |                                                                                                                                                                                  |                                |             |            |                |
-|                                                                                                                                        |                                                                                                                                                   |                                                                                                                                                                                  |                                |             |            |                |
+| Risk                                                                                                                                        | Mitigation                                                                                                                                                                           | Detection Method                                                                                                                                                                 | Notes                          | Impact      | Likelihood | Risk Level     |
+|---------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------|-------------|------------|----------------|
+| Splitting implementation into two phases will mean that we don't see full scope of impact to other platforms and performance                | Consider disabling mesh instancing on platforms not specifically profiled or tested                                                                                                  | community feedback that they have a use case that needs instancing on mobile.                                                                                                    | Phase 1 initial implementation | negligable  | certain    |                |
+| Mobile performance may be degraded by mesh instancing. Disabled by default and not testing in Phase 1 may only hide any issues              | Mesh instancing will be disabled by default, and can be enabled/disabled on a per-project basis.  <br>Use profiling to isolate causes of performance impact and seek to address them | We will use deployed test levels on mobile devices to measure frame time impact and draw call count to ensure performance is not impacted. Contract testers will conduct testing | Phase 2                        | significant | possible   | 14 - medium    |
+| iOS may be untestable                                                                                                                       | we will test only on android if iOS is untestable and accept risk that android and iOS are comparable for impact to performance                                                      | existing GHI blocking iOS and contract testers attempting to deploy                                                                                                              | Phase 2                        | marginal    | eliminated | 0 - none       |
+| Getting draw call counts may not be possible from RPI when `-rhi=null` which would mean additional work to get it from MeshFeatureProcessor | Worst case we can focus automation on stability when mesh instancing is active. Take the cost of implementing counters in MeshFeatureProcessor                                       | Prototype case review. Exploratory automation                                                                                                                                    | Phase 2                        | marginal    | unlikely   | 2 - negligible |
+|                                                                                                                                             |                                                                                                                                                                                      |                                                                                                                                                                                  |                                |             |            |                |
+|                                                                                                                                             |                                                                                                                                                                                      |                                                                                                                                                                                  |                                |             |            |                |
 
 ##### **4.1 Assumptions and Dependencies**
 
@@ -68,23 +59,40 @@ Risks are scored using a risk assessment matrix of impact and likelihood https:/
 
 ### **5.0 In Scope:**
 
-*   HW instancing on various platforms (PC, Linux, iOS, Android)
+###### **Phase 1**
+*   Unit tests
+*   Mesh instancing on PC and Linux
+*   RHI Vulkan and DX12
+
+###### **Phase 2**
+*   Mesh instancing on mobile (iOS, Android)
 *   Editor, game launcher, dedicated server
 *   Editor Python Bindings test
-*   Unit tests
 
 ##### **5.1 Test Items:**
 
-*   Configuration flag enables/disables HW instancing
-*   Performance impact on mobile (this may be delayed)
+###### **Phase 1**
+*   Configuration flag enables/disables mesh instancing
+
+###### **Phase 2**
+*   Performance impact on mobile
 *   Impact on out-of-scope objects such as terrain and white box is zero (draw calls are the same)
 
 ##### **5.2 Developer Test Items:**
 
+###### **Phase 1**
+*   `r_enableMeshInstancing` enabled and disabled
+*   10KEntity and 10KVegInstances levels with mesh instancing enabled
+  
+###### **Phase 2**
 *   Profile testing
 
 ### **6.0 Out of Scope:**
 
+###### **Phase 1**
+*   Mobile
+
+###### **Phases 1 and 2**
 *   Dynamic mesh
 *   Skinned mesh
 *   Terrain
@@ -108,12 +116,15 @@ This is a listing of the test strategies that will be used for test execution. E
 
 ##### **7.2 Automation Approach**
 
+###### **Phase 1**
 *   Unit tests
+
+###### **Phase 2**
 *   Python Editor Bindings automation case to ensure instanced draw calls are correct
 
 ##### **7.3 Test Data and Environments**  
-
-*   Mobile scaled test level 1K entity scenario with mixed batches of mesh required for mobile testing. Existing 10K levels are showing 333ms to 500ms frame times; we would want 
+###### **Phase 2**
+*   Mobile scaled test level 1K entity scenario with mixed batches of mesh required for mobile testing. Existing 10K levels are showing 333ms to 500ms frame times; we would want the test level to demonstrate frame times on mobile that are shorter and easier to gauge impact with. <br>A 1K level should contain the following:<br>A level with 3 mesh components that each have the same model + material combination, meaning they are instance-able. The should each have the 'Use Forward Pass IBL' setting set to true on the mesh component (or test on mobile where forward pass IBL is used for all meshes, regardless of the component setting). There should be two reflection probes in the level. 2 of the 3 mesh components should be near one probe, and the other should be near the other probe. This should result in 2 draw calls in the main view, since the 3rd mesh that is near a different reflection probe cannot be instanced with the other two. Functionally, the reflections should be the same with and without instancing enabled.
 
 ### **8.0 Test Exit Criteria:**
 
