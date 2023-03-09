@@ -20,7 +20,7 @@ Labels will include `kind/bug`, `feature/graphics`, `sig/graphics-audio`, and in
 - Hooks for fetching instanced draw call count that work with `-rhi=null`
 - Mobile devices ready to test
 - Configuration flag(s) and any console variables (cvar) used for testing, enabling and disabling the feature
-- Creation of an Editor Python Bindings (hydra) test automation case in AutomatedTesting project
+- Creation of an Editor Python Bindings test automation case in AutomatedTesting project
 - Profiling and benchmarking on Android and iOS devices
 
 ##### **3.2 Test Entry Criteria**
@@ -49,6 +49,8 @@ Identify what the critical risk areas are as identified through the Risk Analysi
 9.  Defects introduced from outside of this effort
 10.  Bottlenecks or disruptions related to Automation framework
 
+Risks are scored using a risk assessment matrix of impact and likelihood https://en.wikipedia.org/wiki/Risk_matrix
+
 | Risk                                                                                                                                   | Mitigation                                                                                                                                        | Detection Method                                                                                                                                                                 | Notes                          | Impact      | Likelihood | Risk Level     |
 |----------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------|-------------|------------|----------------|
 | Splitting implementation may mean that we don't see full scope of impact to other platforms and performance                            | Consider disabling HW instancing on platforms not specifically profiled or tested                                                                 | hard to detect what we don't look for                                                                                                                                            | Phase 1 initial implementation |             |            |                |
@@ -68,7 +70,7 @@ Identify what the critical risk areas are as identified through the Risk Analysi
 
 *   HW instancing on various platforms (PC, Linux, iOS, Android)
 *   Editor, game launcher, dedicated server
-*   Editor Python Bindings (hydra) test
+*   Editor Python Bindings test
 *   Unit tests
 
 ##### **5.1 Test Items:**
@@ -102,20 +104,20 @@ This is a listing of the test strategies that will be used for test execution. E
 
 **Automation:** Automated tests will be run to cover specific instancing scenarios with expected draw call counts.
 
-**Scene Testing:** System integration tests will be run against predetermined scenes with known content to determin performance impact from frame time measurements.
+**Scene Testing:** System integration tests will be run against predetermined scenes with known content to determine performance impact from frame time measurements.
 
 ##### **7.2 Automation Approach**
 
 *   Unit tests
-*   Python Editor Bindings (hydra) automation case to ensure instanced draw calls are correct
+*   Python Editor Bindings automation case to ensure instanced draw calls are correct
 
-##### **7.3 Test Data and Environments  
+##### **7.3 Test Data and Environments**  
 
 *   Mobile scaled test level 1K entity scenario with mixed batches of mesh required for mobile testing. Existing 10K levels are showing 333ms to 500ms frame times; we would want 
 
 ### **8.0 Test Exit Criteria:**
 
-- `priority/critical` and `priority/blocker` issues are closed appropriately
+- `priority/critical` and `priority/blocker` triage labeled github issues are closed appropriately
 - Specified functionality is confirmed to exist and function.
 - All unit tests for the feature are consistently passing
 
