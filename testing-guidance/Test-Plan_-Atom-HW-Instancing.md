@@ -1,5 +1,5 @@
 # Test Plan: Hardware Instancing of Mesh Draw Calls
-### **1 Introduction:**
+### **1.0 Introduction:**
 
 Hardware Instancing is a method of reducing draw calls by bundling repeated instances of mesh and material within a scene or view. This plan covers high level risk mitigation plans for this feature as a two phase implementation.
 
@@ -7,12 +7,12 @@ Hardware Instancing is a method of reducing draw calls by bundling repeated inst
 
 *   RFC [https://github.com/o3de/sig-graphics-audio/pull/114](https://github.com/o3de/sig-graphics-audio/pull/114)
 
-### **2 Defect Tracking Issues:**
+### **2.0 Defect Tracking Issues:**
 
 Bugs will be tracked with Github Issues (GHI) primarily entered in [https://github.com/o3de/o3de](https://github.com/o3de/o3de).
 Labels will include `kind/bug`, `feature/graphics`, `sig/graphics-audio`, and initially `needs-triage`.
 
-### **3 Test Schedule and Entry Criteria:**
+### **3.0 Test Schedule and Entry Criteria:**
 
 ##### **3.1 Remaining Test Tasks:**
 
@@ -34,7 +34,7 @@ This section should be used to determine the entry criteria for accepting the so
 - Any blocking platform issues are addressed or scope of testing is changed to address open issues
 - Hooks for feature testing are available
 
-### **4 Risks:**
+### **4.0 Risks:**
 
 Identify what the critical risk areas are as identified through the Risk Analysis process defined by the QA team, such as:
 
@@ -64,7 +64,7 @@ Identify what the critical risk areas are as identified through the Risk Analysi
 - Frame time measurements are a suitable proxy for performance impact in manual testing
 - Draw call counts can be measured in stable scenarios to determine integrated functionality
 
-### **5 In Scope:**
+### **5.0 In Scope:**
 
 *   HW instancing on various platforms (PC, Linux, iOS, Android)
 *   Editor, game launcher, dedicated server
@@ -81,7 +81,7 @@ Identify what the critical risk areas are as identified through the Risk Analysi
 
 *   Profile testing
 
-### **6 Out of Scope:**
+### **6.0 Out of Scope:**
 
 *   Dynamic mesh
 *   Skinned mesh
@@ -90,7 +90,7 @@ Identify what the critical risk areas are as identified through the Risk Analysi
 *   Shape components
 *   AuxGeom
 
-### **7 Test Approach:**
+### **7.0 Test Approach:**
 
 ##### **7.1 Test Method**
 
@@ -113,7 +113,7 @@ This is a listing of the test strategies that will be used for test execution. E
 
 *   Mobile scaled test level 1K entity scenario with mixed batches of mesh required for mobile testing. Existing 10K levels are showing 333ms to 500ms frame times; we would want 
 
-### **8 Test Exit Criteria:**
+### **8.0 Test Exit Criteria:**
 
 - `priority/critical` and `priority/blocker` issues are closed appropriately
 - Specified functionality is confirmed to exist and function.
