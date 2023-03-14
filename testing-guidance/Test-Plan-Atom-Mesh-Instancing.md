@@ -81,7 +81,7 @@ Risks are scored using a risk assessment matrix of impact and likelihood https:/
 ##### **5.2 Developer Test Items:**
 
 ###### **Phase 1**
-*   `r_enableMeshInstancing` enabled and disabled
+*   `r_meshInstancingEnabled` enabled and disabled
 *   10KEntity and 10KVegInstances levels with mesh instancing enabled
   
 ###### **Phase 2**
