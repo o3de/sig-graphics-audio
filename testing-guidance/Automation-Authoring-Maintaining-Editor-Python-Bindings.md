@@ -2,9 +2,11 @@
 
 ## 1.0 Introduction:
 
-Editor Python Bindings (EPB) are python based hooks for executing automation within the O3DE editor context. These bindings are exposed through modules in the `azlmbr` grouping. Event busses (ebus) and direct methods are exposed in each `azlmbr` module.
+Editor Python Bindings (EPB) are python based hooks for executing automation within the O3DE editor context. These bindings are exposed through modules in the `azlmbr` grouping that are only executable within the O3DE editor. Event busses (ebus) and direct methods are exposed in each `azlmbr` module.
 
-In editor session, using these ebus and method calls found in `azlmbr` modules you can open levels, enter/exit simulation game mode, and perform complex content creation tasks. Ebus calls can create new entities and add new components to those entities. Component properties can be modified and complex relationships can be created between entities and components.
+Editor Context properties and busses are not accessible in game launcher; EPB automation doesn't easily translate to game launcher scope. Behavior context busses are similar to editor context but don't cover the same functionality as many EPB.  Behavior context are interfaces (ebus and properties) used by game logic in game mode. More information about [Reflection Context](https://www.o3de.org/docs/user-guide/programming/components/reflection/) and [Event Messaging](https://www.o3de.org/docs/user-guide/programming/messaging/) can be found in the documentation.
+
+In an editor session, using these ebus and method calls found in `azlmbr` modules you can open levels, enter/exit simulation game mode, and perform complex content creation tasks. Ebus calls can create new entities and add new components to those entities. Component properties can be modified and complex relationships can be created between entities and components.
 
 Atom automation primarily uses EPB automation for component verification in the Automated Review (AR) system. Atom components can be instantiated in an editor session using `-rhi=null` so that the basic component can be tested without requiring GPU render. RPI level function will occur when `-rhi=null` so the components are still exercising some code.
 We take advantage of helpers to make these ebus calls more object-oriented; specifically editor_entity_utils.py.
@@ -49,13 +51,13 @@ if __name__ == "__main__":
     from editor_python_test_tools.utils import Report
     Report.start_test(MyTestFunction)
 ```
-:white_check_mark: Import only the objects you plan to use. The usage is cleaner when you `from module imort MyClass`, then you don't need to alias it with as you just call MyClass directly.
+:white_check_mark: Import only the objects you plan to use. In code usage will be cleaner when you `from module imort MyClass`, then you don't need to alias it with `import module as alias` you just call MyClass directly.
 
 look at [hydra_AtomEditorComponents_MeshAdded.py line 184](https://github.com/o3de/o3de/blob/4607610bc8e98f70a2a89123fdcb3d6ed5d5be4e/AutomatedTesting/Gem/PythonTests/Atom/tests/hydra_AtomEditorComponents_MeshAdded.py#L184) and you'll find the same basic calls to create an entity named 'Mesh' (we call AtomComponentProperties.mesh() which returns 'Mesh' for the entity name) it then adds a Mesh component to that. Notice that we save references to the entity object and the component object as variables; that allows us to do things with those specific objects. If we wanted to set `my_mesh_component` to not use ray tracing we could do the following:
 ```python
     my_mesh_component.set_component_property_value(AtomComponentProperties.mesh('Use ray tracing'), value=False)
 ```
-`'Use ray tracing'` in this case is a component property with a property path stored in AtomComponentProperties. the function `set_component_property_value` uses a property path to set a value on the component. In this case the property path looks like `'Controller|Configuration|Use ray tracing'`
+`'Use ray tracing'` in this case is a component property with a property path stored in AtomComponentProperties. The function `set_component_property_value` uses a property path to set a value on the component. In this case the property path looks like `'Controller|Configuration|Use ray tracing'`
 
 ### 2.3 Tracer for Collecting AZ_Error, AZ_Assert and Other Messages
 
@@ -98,7 +100,7 @@ class Tests:
 
 Components have common name strings, and they also have property paths which define the editor context path to each property of the component and are used to get/set values as shown in section 2.2 above. We store all these strings in `AtomComponentProperties` which is a class full of static methods for each Atom component.
 
-Each component static method stores a dictionary list of the properties for that component. The default return from the static method is the dictionary key `name` which stores the common name of the component. so calling without argument returns the common name of the component. Each property of the component is stored as a key value pair where value is generally the property path `'property name': 'Controler|Configuration|path|property name'`.
+Each component static method stores a dictionary list of the properties for that component. The default return from the static method is the dictionary key `name` which stores the common name of the component, so calling without argument returns the common name of the component. Each property of the component is stored as a key value pair where value is generally the property path `'property name': 'Controler|Configuration|path|property name'`.
 
 Some components require shapes which we store a list of in the key 'shapes'. Lists in 'shapes' can be used to itterate over required shapes for coverage.
 
@@ -113,7 +115,62 @@ To generate component property paths for a new component we would write code lik
 ```
 `properties` in this example is a dictionary with key being string property_path and value being a tuple (type, visible) where type is the python marshalled type and visible is an indication if the property is UI visible (some properties are concealed in a minimized section of properties). note that get_property_type() uses a regex that makes assumptions about property path content that on rare occasions are not fulfilled when a property has extended characters; if that happens the method will dump the offending property path in the output and return the dictionary without it. By writing each key:value of the dictionary right after the call you should get all the property paths including any that don't match the regex. Some components will crash the editor when `get_property_type_visibility` is called on them. Those components can be more difficult to extract property paths from.
 
-After creating the basic script above that creates 'Mesh' component then calls `get_property_type_visibility` your script executed in the editor will spew the property paths in the console. you can clear the console then run the script to make it easier to find and copy the output.
+After creating the basic script above that creates 'Mesh' component then calls `get_property_type_visibility` your script executed in the editor will spew the property paths in the console. You can clear the console then run the script to make it easier to find and copy the output.
+
+### 2.6 How to Find Default Values and Ranges for Properties
+
+You can use the tooltips in the editor or look at the C++ source.
+
+Open the O3DE.sln in visual studio and search for the component name in quotes in all files *.h and *.cpp. You should see among the found lines a file or files "Editor*Name*Component" and the line where your component name in quotes is found will be preceeded by `editContext->Class`. You're at the editor context reflection for this component. You'll find most if not all the properties for your component specified here. Farther down in this file you should find each property. You'll see min, max and unit type specified (unit type isn't generally important). If you peak the variable being set by this you can find deeper typing information. 
+```C++
+                        ->DataElement(AZ::Edit::UIHandlers::Default, &SkyAtmosphereComponentConfig::m_groundRadius, "Ground radius", "Ground radius")
+                            ->Attribute(AZ::Edit::Attributes::Suffix, " km")
+                            ->Attribute(AZ::Edit::Attributes::Min, 0.0f)
+                            ->Attribute(AZ::Edit::Attributes::Max, 100000.0f)
+
+                        ->DataElement(AZ::Edit::UIHandlers::ComboBox, &SkyAtmosphereComponentConfig::m_originMode, "Origin", "The origin to use for the atmosphere")
+```
+if you peak the type for `m_originMode` in the above example you'll find its type is `AtmosphereOrigin m_originMode = AtmosphereOrigin::GroundAtWorldOrigin;`. Peak `AtmosphereOrigin` and you'll find that it's an enum;
+```C++
+        enum class AtmosphereOrigin
+        {
+            GroundAtWorldOrigin,
+            GroundAtLocalOrigin,
+            PlanetCenterAtLocalOrigin
+        };
+```
+These enums are used in ComboBox UI to set options. In AtomComponentProperties we represent these as dictionaries:
+```python
+#Origin type for Sky Atmosphere component
+ATMOSPHERE_ORIGIN = {
+    'GroundAtWorldOrigin': 0,
+    'GroundAtLocalOrigin': 1,
+    'PlanetCenterAtLocalOrigin': 2,
+}
+```
+Be aware that some C++ enums don't use default values or present other complexities so getting the integer values these properties expect can be tricky.
+
+### 2.7 Strategy for Testing Component Properties
+
+The objective for Atom component automation is to exercise all properties. When there are a lot of properties we generally set maximum value and move on. When there are fewer properties we set minimum and maximum values. Optionally, we return to default values. Values which are dropdowns and governed by enums are covered using a for loop to exercise all options.
+
+The general flow of each test is as follows:
+```text
+Test Steps:
+1) Create an entity with no components.
+2) Add test component to the entity from step 1.
+3) Remove the test component.
+4) Undo test component removal.
+5) Verify test component is enabled.
+6) Set all properties of the test component. 
+7) Enter/Exit game mode.
+8) Test IsHidden.
+9) Test IsVisible.
+10) Delete Stars entity.
+11) UNDO deletion.
+12) REDO deletion.
+13) Look for errors and asserts.
+```
 
 ## 3.0 Running an Editor Script in Editor
 You run a script in editor by calling the file at the console prompt using `pyRunFile` with a relative path to your script.py file:
@@ -195,7 +252,7 @@ Alternatively you can target specifically for your property paths based on chara
 (?# replace with initial spaces to get docstring for AtomComponentProperties)
           - '(?{3}${3}:)'
 ```
-Some types may have cleanup from this regex replace, but if you have a component with 20+ properties this can still speed up your work. In the following you would remove "<StarsAsset>', 'Visible')"
+Some types may have cleanup from this regex replace, but if you have a component with 20+ properties this can still speed up your work. In the following you would remove `<StarsAsset>', 'Visible')` since it was missed by regex
 ```text
           - 'Stars Asset'<StarsAsset>', 'Visible')
           - 'Exposure'
@@ -209,7 +266,7 @@ From your docstring list of properties you can generate the Tests tuples for bas
 (?# replace)
     \L${1}(?{2}_${2}:)(?{3}_${3}:)\E \= \(\r\n        \"'${1}(?{2} ${2}:)(?{3} ${3}:)' property set\",\r\n        \"P1\: '${1}(?{2} ${2}:)(?{3} ${3}:)' property failed to set\"\)\r\n
 ```
-your list of properties from docstring now transforms to Tests tuple
+Your list of properties from docstring now transforms to Tests tuple
 ```python
 class Tests:
     stars_asset = (
@@ -225,7 +282,7 @@ class Tests:
         "'Radius factor' property set",
         "P1: 'Radius factor' property failed to set")
 ```
-starting with your docstring list of properties you can generate blocks of code and comments
+Starting with your docstring list of properties you can generate blocks of code and comments
 ```regexp
 (?# search with initial spaces)
           - '([A-z09 ]+)'\r\n
