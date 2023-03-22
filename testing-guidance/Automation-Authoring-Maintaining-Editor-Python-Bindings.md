@@ -121,23 +121,23 @@ After creating the basic script above that creates 'Mesh' component then calls `
 
 You can use the tooltips in the editor or look at the C++ source.
 
-Open the O3DE.sln in visual studio and search for the component name in quotes in all files *.h and *.cpp. You should see among the found lines a file or files "Editor*Name*Component" and the line where your component name in quotes is found will be preceeded by `editContext->Class`. You're at the editor context reflection for this component. You'll find most if not all the properties for your component specified here. Farther down in this file you should find each property. You'll see min, max and unit type specified (unit type isn't generally important). If you peak the variable being set by this you can find deeper typing information. 
+Open the O3DE.sln in visual studio and search for the component name in quotes in all files `*.h` and `*.cpp`. You should see among the found lines a file or files "Editor*Name*Component" and the line where your component name in quotes is found will be preceeded by `editContext->Class`. You're at the editor context reflection for this component. You'll find most if not all the properties for your component specified here. Farther down in this file you should find each property. You'll see min, max and unit type specified (unit type isn't generally important). If you peak the variable being set by this you can find deeper typing information. 
 ```C++
-                        ->DataElement(AZ::Edit::UIHandlers::Default, &SkyAtmosphereComponentConfig::m_groundRadius, "Ground radius", "Ground radius")
-                            ->Attribute(AZ::Edit::Attributes::Suffix, " km")
-                            ->Attribute(AZ::Edit::Attributes::Min, 0.0f)
-                            ->Attribute(AZ::Edit::Attributes::Max, 100000.0f)
+->DataElement(AZ::Edit::UIHandlers::Default, &SkyAtmosphereComponentConfig::m_groundRadius, "Ground radius", "Ground radius")
+    ->Attribute(AZ::Edit::Attributes::Suffix, " km")
+    ->Attribute(AZ::Edit::Attributes::Min, 0.0f)
+    ->Attribute(AZ::Edit::Attributes::Max, 100000.0f)
 
-                        ->DataElement(AZ::Edit::UIHandlers::ComboBox, &SkyAtmosphereComponentConfig::m_originMode, "Origin", "The origin to use for the atmosphere")
+->DataElement(AZ::Edit::UIHandlers::ComboBox, &SkyAtmosphereComponentConfig::m_originMode, "Origin", "The origin to use for the atmosphere")
 ```
 if you peak the type for `m_originMode` in the above example you'll find its type is `AtmosphereOrigin m_originMode = AtmosphereOrigin::GroundAtWorldOrigin;`. Peak `AtmosphereOrigin` and you'll find that it's an enum;
 ```C++
-        enum class AtmosphereOrigin
-        {
-            GroundAtWorldOrigin,
-            GroundAtLocalOrigin,
-            PlanetCenterAtLocalOrigin
-        };
+enum class AtmosphereOrigin
+{
+    GroundAtWorldOrigin,
+    GroundAtLocalOrigin,
+    PlanetCenterAtLocalOrigin
+};
 ```
 These enums are used in ComboBox UI to set options. In AtomComponentProperties we represent these as dictionaries:
 ```python
@@ -166,7 +166,7 @@ Test Steps:
 7) Enter/Exit game mode.
 8) Test IsHidden.
 9) Test IsVisible.
-10) Delete Stars entity.
+10) Delete entity.
 11) UNDO deletion.
 12) REDO deletion.
 13) Look for errors and asserts.
