@@ -9,7 +9,7 @@ Editor Context properties and busses are not accessible in game launcher; EPB au
 In an editor session, using these ebus and method calls found in `azlmbr` modules you can open levels, enter/exit simulation game mode, and perform complex content creation tasks. Ebus calls can create new entities and add new components to those entities. Component properties can be modified and complex relationships can be created between entities and components.
 
 Atom automation primarily uses EPB automation for component verification in the Automated Review (AR) system. Atom components can be instantiated in an editor session using `-rhi=null` so that the basic component can be tested without requiring GPU render. RPI level function will occur when `-rhi=null` so the components are still exercising some code.
-We take advantage of helpers to make these ebus calls more object-oriented; specifically editor_entity_utils.py.
+We take advantage of helpers to make these ebus calls more object-oriented; specifically [editor_entity_utils.py](https://github.com/o3de/o3de/blob/development/AutomatedTesting/Gem/PythonTests/EditorPythonTestTools/editor_python_test_tools/editor_entity_utils.py).
 
 ## 2.0 Structure of Editor Python Test Code
 
@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
 ### 2.2 Basic Entity and Components
 
-Components are internally referenced with UUID, but we don't expect anyone to know UUID's and use them so helper methods in editor_entity_utils.py use component names as strings to look up the UUID for you and add components. We utilize atom_constants.py class AtomComponentProperties (which has static methods for each component) to store properties for components including the component name and property paths. By writing AtomComponentProperties.mesh() in your code you'll get back the component name string 'Mesh' which you can use for asking for the addition of a Mesh component like this:
+Components are internally referenced with UUID, but we don't expect anyone to know UUID's and use them so helper methods in [editor_entity_utils.py](https://github.com/o3de/o3de/blob/3311941a9204b1593f9406db614f87641f12e1a5/AutomatedTesting/Gem/PythonTests/EditorPythonTestTools/editor_python_test_tools/editor_entity_utils.py#L482) use component names as strings to look up the UUID for you and add components. We utilize atom_constants.py class [AtomComponentProperties](https://github.com/o3de/o3de/blob/3311941a9204b1593f9406db614f87641f12e1a5/AutomatedTesting/Gem/PythonTests/Atom/atom_utils/atom_constants.py#L194) (which has static methods for each component) to store properties for components including the component name and property paths. By writing AtomComponentProperties.mesh() in your code you'll get back the component name string 'Mesh' which you can use for asking for the addition of a Mesh component like this:
 ```python
 def MyTestFunction():
     from editor_python_test_tools.editor_entity_utils import EditorEntity
@@ -51,7 +51,7 @@ if __name__ == "__main__":
     from editor_python_test_tools.utils import Report
     Report.start_test(MyTestFunction)
 ```
-:white_check_mark: Import only the objects you plan to use. In code usage will be cleaner when you `from module imort MyClass`, then you don't need to alias it with `import module as alias` you just call MyClass directly.
+:white_check_mark: Import only the objects you plan to use. In code usage will be cleaner when you `from module import MyClass`, then you don't need to alias it with `import module as alias` you just call MyClass directly.
 
 look at [hydra_AtomEditorComponents_MeshAdded.py line 184](https://github.com/o3de/o3de/blob/4607610bc8e98f70a2a89123fdcb3d6ed5d5be4e/AutomatedTesting/Gem/PythonTests/Atom/tests/hydra_AtomEditorComponents_MeshAdded.py#L184) and you'll find the same basic calls to create an entity named 'Mesh' (we call AtomComponentProperties.mesh() which returns 'Mesh' for the entity name) it then adds a Mesh component to that. Notice that we save references to the entity object and the component object as variables; that allows us to do things with those specific objects. If we wanted to set `my_mesh_component` to not use ray tracing we could do the following:
 ```python
@@ -223,12 +223,12 @@ Note the NAME found in CMakeLists.txt is the what's specified at a CTest command
 
 TIMEOUT is in seconds. Jenkins will terminate jobs that run longer than 1800 seconds so setting this Ctest timeout to values larger would be terminated by Jenkins. `EditorTestSuite` and `EditorBatchedTest` themselves have a timeout default. Cumulative timeout total for EditorTestSuite should be less than CMakeLists.txt TIMEOUT for a given pytest suite module.
 
-## 6.0 Using Notepad++ to Assmeble Code for New Components
+## 6.0 Using Notepad++ to Assemble Code for New Components
 
 You can use Notepad++ search replace once you've figured out a components common name and successfully scripting the creation of that component and dump of the property paths with type as shown in section 2.5.
 
 - Starting with the list of property paths with type do some simple replace with extended characters to chop off the spew prefix and extra lines.
-- Locate and delete lines for 'Controler' and 'Configuration' since these are actually grouping stubs not properties you would set.
+- Locate and delete lines for 'Controller' and 'Configuration' since these are actually grouping stubs not properties you would set.
 - Your list of property paths with types your starting point will look like
 ```text
 'Controller|Configuration|Stars Asset' ('Asset<StarsAsset>', 'Visible')
