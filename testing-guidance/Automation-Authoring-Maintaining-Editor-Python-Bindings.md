@@ -11,6 +11,12 @@ In an editor session, using these ebus and method calls found in `azlmbr` module
 Atom automation primarily uses EPB automation for component verification in the Automated Review (AR) system. Atom components can be instantiated in an editor session using `-rhi=null` so that the basic component can be tested without requiring GPU render. RPI level function will occur when `-rhi=null` so the components are still exercising some code.
 We take advantage of helpers to make these ebus calls more object-oriented; specifically [editor_entity_utils.py](https://github.com/o3de/o3de/blob/development/AutomatedTesting/Gem/PythonTests/EditorPythonTestTools/editor_python_test_tools/editor_entity_utils.py).
 
+### 1.1 More Reading
+
+- Raw Ebus calls [editor-automation](https://github.com/o3de/o3de.org/blob/main/content/docs/user-guide/editor/editor-automation.md) (prefer editor_entity_utils.py object oriented wrappers over raw ebus calls)
+- BehaviorContext details [EditorPythonBindings](https://github.com/o3de/sig-testing/blob/main/editorpythonbindings.md)
+- [Test Automation Best Practices](https://www.o3de.org/docs/user-guide/testing/best-practices/)
+
 ## 2.0 Structure of Editor Python Test Code
 
 ### 2.1 Basic structure
