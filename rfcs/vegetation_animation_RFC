@@ -1,0 +1,322 @@
+# RFC: Wind Animation on Vegetation
+
+### Summary:
+This proposal outlines how to add an `Environment` gem to provide wind settings and wind animation implementation for vegetation in `EnhancedPBR` materialtype in O3DE.
+
+### What is the relevance of this feature?
+Wind animation for vegetation is a kind of important environment effects for natural scenes. Vegetation in O3DE now has always been mainly static. Although we could use `PhysX` components to provide force region to simulate the wind animation, but the performance is relatively poor for large-area plants. We need a GPU-based implementation to animate the wind effect. 
+
+To solve the problem that our scenes can have thousands of different vegetations, we push the envelope further by making vegetation react to the global wind source, and we bend not only the plant but also the leaves, in detail, with all computations procedurally and efficiently done on the vertex shader.
+
+### Feature design description:
+
+This design is mainly divided into two parts: `Environment` gem and wind animation implementation in `EnhancedPBR` materialtype. 
+
+The gem provide necessary global wind settings, and the response happens in the material. An example is given in the following diagram, where we show the relationship. We obtain parameters from the gem, and send them to the `SceneSrg`. When rendering, material could get all parameters from the `SceneSrg`. 
+
+<img src="C:\Users\l00610116\AppData\Roaming\Typora\typora-user-images\image-20230224112140259.png" alt="image-20230224112140259" style="zoom: 67%;" />
+
+#### Design of the `Environment` gem
+
+The gem is placed on the `Level` entity. There is a component named `HWEnvironment Settings`, as the picture shows:
+
+<img src="C:\Users\l00610116\Downloads\gem_en.png" alt="gem_en" style="zoom:67%;" />
+
+Now the wind settings in the component include wind switch, wind vector, different wind modes, etc. We send these parameters into `SceneSrg`, thus material shaders could get them. The following diagram shows the editor of this gem.There are two modes provided by the component:
+
+* `Static Wind`: The wind vector is a constant value, as the picture shows:
+
+  <img src="http://resource.idp.huawei.com/idpresource/nasshare/editor/image/1032914/1_zh-cn_image_0000001460692481.png" alt="Figure Name:unnaming.png CAD Name:zh-cn_image_0000001460692481.png" style="zoom:67%;" />
+
+* `Breezy Wind`: The wind vector could be changed following the time change by a sine function. And the breezy settings could affect the value of the sine function. In the breezy state, the meadow wave effect can be turned on. The meadow wave effect is only for large areas of grass by sampling from a wave texture. At this time, a additional wave texture needs to be set, as the picture shows:
+
+  <img src="http://resource.idp.huawei.com/idpresource/nasshare/editor/image/1032914/1_zh-cn_image_0000001410732348.png" alt="Figure Name:unnaming.png CAD Name:zh-cn_image_0000001410732348.png" style="zoom:67%;" />
+
+Here are parameters descriptions in the component:
+
+| Parameter                  | Description                                                  |
+| -------------------------- | ------------------------------------------------------------ |
+| `Enable Wind`              | Click the button to enable the wind.                         |
+| `Wind Vector`              | Set the direction and strength of the wind.                  |
+| `Wind Mode`                | Set the wind mode, including static and breezy modes.        |
+| `Breezy Frequency (1/sec)` | Set the frequency of the breezy sine function, the unit is 1/second. |
+| `Breezy Life Time (min)`   | Set the duration of the breezy sine function in minutes, if set to "-1.0", there is no limit. |
+| `Breezy Strength (m/s)`    | Set the strength of the breezy sine function in meters per second. |
+| `Meadow Wave Settings`     | `Enable Meadow Wave`: Click the button to turn on the effect of generating meadow wave based on plant positions and the wave texture. <br />`Wave Texture Scale`: Set the scaling factor for wave texture sample values. <br />`Wave Texture`: Specify the sample texture for the grass waves. |
+
+Now the gem only supports global wind settings, but could extend to add more environment settings. Any other component which responses to this could get the wind related parameters. We hope that other components that need to use the wind settings can uniformly obtain them from here.
+
+Besides the wind setting, we wish that any other global common environment settings could be included in this gem.
+
+#### Design of the wind animation for vegetation in `EnhancedPBR` materialtype
+
+Wind animation is basically a kind of vertex animation implemented in vertex shader.
+
+There are two types for wind animation: `Main Bending` and `Detail Bending`. The `Main Bending` is an overall bending of the vegetation which refers to the overall offset of all vertices on the mesh controlled by the wind vector and object mass. The `Detail Bending` is a localized bending for trunks or leaves controlled by wind vector and another detail sources, like noise texture or vertex color attribute.
+
+We generate the main bending by using the `xy` components of the wind vector, which gives us the wind direction and its strength, using the vegetation mesh height as a scale to apply a directional vertex deformation. Note that care must be taken to limit the amount of deformation. Otherwise, the results will not look believable.
+
+`Main Bending` panel in the material editor is shown as following picture:
+
+<img src="C:\Users\l00610116\AppData\Roaming\Typora\typora-user-images\image-20230225190657311.png" alt="image-20230225190657311" style="zoom:67%;" />
+
+The `Object Mass` can affect the overall bending range, the greater the mass, the smaller the overall bending range. In addition, when opening `Perpendicular Bending`, the force in the perpendicular direction can also be added to make the plants bend along the vertical direction of the wind direction, enriching the diversity of bending.
+
+To achieve the meadow wave effect, we need to enable the `Enable Meadow Wave` in the wind settings of `HWEnvironment Setting` component and enable the `Meadow Wave Bending` in the `Wind Animation` material property. We only need to perform this operation on the vegetation that we want to have the meadow wave animation. If not desired, just turn off `Meadow Wave Bending`.
+
+For detail bending, we approach things in a similar fashion, but in this case only wind strength is taken into account. The detail bending of vegetation refers to the fine adjustment of the bending of vegetation branches or leaves through `Detail Source`. There are two types of detail source, `Noise Texture` and `Vertex Color`.
+
+The parameter panels are shown by the following pictures when switching `Detail Source`:
+
+<img src="http://resource.idp.huawei.com/idpresource/nasshare/editor/image/1032914/1_zh-cn_image_0000001460812125.png" alt="Figure Name:unnaming.png CAD Name:zh-cn_image_0000001460812125.png" style="zoom:67%;" />
+
+<img src="http://resource.idp.huawei.com/idpresource/nasshare/editor/image/1032914/1_zh-cn_image_0000001460692485.png" alt="Figure Name:unnaming.png CAD Name:zh-cn_image_0000001460692485.png" style="zoom:67%;" />
+
+When the detail source is noise texture, the bending of each vertex in the model is controlled by a certain sampling point in the texture. The sampling point is related to the spatial position of the vertex in the model and changes with time, so it can produce the effect of the vegetation swinging over time. The noise texture needs to be created and specified by the user. The gem has built-in commonly used noise textures by default, such as `HWEnvironment\Assets\Textures\NoiseTextures\perlinNoise_sum.tif`, as shown in the following figure:
+
+<img src="C:\Users\l00610116\AppData\Roaming\Typora\typora-user-images\image-20230224214452233.png" alt="image-20230224214452233" style="zoom:67%;" />
+
+When the detail source is vertex color, the bending of each vertex in the model is controlled by the vertex color attribute and the control function. The control function is built-in and cannot be changed temporarily. Vertex colors are stored in attributes of each vertex. Artists paint one RGB color per-vertex using a common DCC tool. This color gives us extra information about the detail bending determining the phase and amplitude scaling when sampling from the control function. Taking a leaf as an example, the red channel is used for the stiffness of leaves' edges, the green channel for per-leaf phase variation, and the blue channel for the overall stiffness of the leaves. The red, green and blue components of the vertex color in the leaf are displayed in turn from left to right, as the following figure shows:
+
+<img src="C:\Users\l00610116\AppData\Roaming\Typora\typora-user-images\image-20230224214855587.png" alt="image-20230224214855587" style="zoom:67%;" />
+
+Different parameter settings occur in the case of two different detail sources. Also, there are several common parameters both for main bending and detail bending, like common bending frequency and scale. The diagram below shows all the parameters and corresponding descriptions in the wind animation material property:
+
+| Parameter                  | Description                                                  |
+| :------------------------- | ------------------------------------------------------------ |
+| `Enable`                   | Click the button to enable wind animation.                   |
+| `Main Bending`             | Use main bending to simulate animation effects.              |
+| `Object Mass`              | Set the object mass, only applied to main bending.           |
+| `Perpendicular Bending`    | Animate with perpendicular bending, in addition to the main bending. |
+| `Perpendicular Force`      | Set the magnitude of the perpendicular bending force.        |
+| `Meadow Wave Bending`      | Use meadow waves to animate the effect, in addition to the main bending. |
+| `Meadow Wave Shift`        | Set the sample offset for the wave texture.                  |
+| `Detail Bending`           | Use detail bending to simulate animation effects.            |
+| `Breezy Effect`            | Use the breezy wind to affect detail bending animations.     |
+| `Detail Source`            | Indicate how to obtain detail input. There are two input sources, namely noise texture and vertex color. |
+| `Noise Texture`            | Specify to obtain the noise value from a gray-scale texture. |
+| `Noise Texture Scale`      | Set the scaling factor for the sample value from the noise texture. |
+| `Start Height`             | Set the start height of the detail bending, vertices under the start height would not be animated. |
+| `Branch Amplitude`         | Set the up and down bending range of the branches or the entire leaf trunk. |
+| `Edge Amplitude`           | Set the up and down bending range of the leaf edge.          |
+| `Inverse Blue Channel`     | Inverse the green channel value of vertex color, some special assets may need this operation. |
+| `Common Bending Frequency` | Sets the common bending frequency, both main bending and detail bending are affected. |
+| `Common Bending Scale`     | Set the common bending scale, both the main bending and the detail bending are affected. |
+
+### Technical design description:
+The `HWEnvironment` gem is just developed by following the gem framework in O3DE. The UML class diagram of the gem is shown in the following picture:
+
+```mermaid
+classDiagram
+	class HWEnvironmentComponent {
+		+Reflect(AZ::ReflectContext*)$ void
+	}
+
+	class HWEnvironmentRequestBus {
+		<<Interface>>
+		+GetHWEnvironmentParams()*
+		+SetHWEnvironmentParams()*
+	}
+	class HWEnvironmentFeatureProcessorInterface {
+		<<Interface>>
+		+GetSettingsInterface(AZ::EntityId)* HWEnvironmentSettingsInterface
+		+GetOrCreateSettingsInterface(AZ::EntityId)* HWEnvironmentSettingsInterface
+		+OnSettinigsChanged()* void
+	}
+	class HWEnvironmentSettingsInterface {
+		<<Interface>>
+		+GetHWEnvironmentParams()*
+		+SetHWEnvironmentParams()*
+		+OnConfigurationChanged()* void
+	}
+	
+	class EditorHWEnvironmentComponent {
+		-HWEnvironmentComponentController m_controller
+		-bool m_boolForCheckButton
+		+Reflect(AZ::ReflectContext*)$ void
+		+OnConfigurationChanged() u32
+	}
+	class HWEnvironmentComponentConfig {
+		+m_HWEnvironmentParams
+		+bool m_cfgCheckBox
+		+bool m_randomCheckBox
+		+AZ::Data::Asset m_breezyTextureAsset
+		+Reflect(AZ::ReflectContext*)$ void
+		+CopySettingsFrom(HWEnvironmentSettingsInterface*) void
+		+CopySettingsTo(HWEnvironmentSettingsInterface*) void
+		+UpdateEnableFlags() void
+		+WindModeIsStatic() bool
+		+WindModeIsBreezy() bool
+		+CheckBoxIsCfgAndRandom() bool
+	}
+	
+	class HWEnvironmentComponentController {
+		-HWEnvironmentSettingsInterface* m_ttSettingsInterface
+		-HWEnvironmentComponentConfig m_configuration
+		-AZ::Data::Asset m_breezyTextureAssetForEditor
+		-AZ::EntityId m_entityId
+		+GetHWEnvironmentParams()
+		+SetHWEnvironmentParams()
+		+Reflect(AZ::ReflectContext*)$ void
+		+SetConfiguration(const HWEnvironmentComponentConfig&) void
+		+GetConfiguration() HWEnvironmentComponentConfig
+		+OnAssetReady(AZ::Data::Asset) void
+		+OnAssetReloaded(AZ::Data::Asset) void
+		+OnAssetError(AZ::Data::Asset) void
+		+LoadImage(AZ::Data::Asset&) void
+		+UpdateWithAsset(AZ::Data::Asset) void
+		+IsAssetValid(AZ::Data::Asset&) void
+		+OnBreezyTextureAssetChanged() void
+		+OnConfigurationChanged() void
+	}
+	
+	class HWEnvironmentFeatureProcessor {
+		-PrepareSceneSrgEvent m_updateSceneSrgHandler
+		-WindParam m_windParam
+		-AZ::Data::Instance<AZ::RPI::Buffer> m_windParamBuffer
+		-bool m_deviceBufferNeedsUpdate
+		-bool m_isWriteable
+		-EntityId m_entityId
+		-AZStd::unique_ptr<HWEnvironmentSettings> m_settings
+		-AZ::Data::Instance<AZ::RPI::Image> m_defaultBreezyTexture
+		+Reflect(AZ::ReflectContext*)$ void
+		+OnBeginPrepareRender() void
+		+OnEndPrepareRender() void
+		+GetSettingsInterface(AZ::EntityId)* HWEnvironmentSettingsInterface
+		+GetOrCreateSettingsInterface(AZ::EntityId)* HWEnvironmentSettingsInterface
+		+OnSettinigsChanged()* void
+		+PrepareBuffers() void
+		+UpdateSceneSrg() void
+		+LoadDefaultBreezyTexture() void
+	}
+	
+	class HWEnvironmentSettings {
+		-HWEnvironmentFeatureProcessor* m_featureProcessor
+		-m_HWEnvironmentParams
+		+GetHWEnvironmentParams()
+		+SetHWEnvironmentParams()
+		+OnConfigurationChanged() void
+		
+	}
+	
+	class WindParam {
+		+AZStd::array<float, 3> m_windVector
+        +float m_breezyFrequency
+        +float m_breezyLifeTime
+        +float m_breezyStrength
+        +float m_breezyTextureScale
+	}
+	
+	HWEnvironmentRequestBus <|.. HWEnvironmentComponentController : Realization
+	HWEnvironmentSettingsInterface <|.. HWEnvironmentSettings : Realization
+	HWEnvironmentComponentController *-- EditorHWEnvironmentComponent : Composition
+	HWEnvironmentSettingsInterface <.. HWEnvironmentComponentConfig : Dependency
+	HWEnvironmentSettingsInterface <-- HWEnvironmentComponentController : Association
+	HWEnvironmentComponentConfig *-- HWEnvironmentComponentController : Composition
+	HWEnvironmentSettingsInterface <.. HWEnvironmentFeatureProcessor : Dependency
+	HWEnvironmentFeatureProcessorInterface <|.. HWEnvironmentFeatureProcessor : Realization
+	HWEnvironmentSettings <-- HWEnvironmentFeatureProcessor : Association
+	WindParam *-- HWEnvironmentFeatureProcessor : Composition
+	HWEnvironmentFeatureProcessor <-- HWEnvironmentSettings : Association
+	
+```
+
+The most important function is `UpdateSceneSrg` which is responsible for updating `SceneSrg` by using values from the editor component if necessary. We have added a new file `SceneSrg.azsli` to receive the updates from `HWEnvironmentFeatureProcessor`.
+
+```c++
+void HWEnvironmentFeatureProcessor::UpdateSceneSrg(AZ::RPI::ShaderResourceGroup* sceneSrg)
+{
+    if (!m_settings)
+    {
+        return;
+    }
+
+    sceneSrg->SetConstant(m_enabledWindIndex, m_settings->GetEnabledWind());
+    sceneSrg->SetConstant(m_enabledBreezyIndex, m_settings->GetWindMode() == static_cast<uint32_t>(WindMode::BREEZY));
+    sceneSrg->SetConstant(m_enabledMeadowWaveIndex, m_settings->GetEnabledMeadowWave());
+    sceneSrg->SetBufferView(m_windParamBufferIndex, m_windParamBuffer->GetBufferView());
+    sceneSrg->SetImage(
+        m_meadowWaveTextureIndex, (m_settings->GetMeadowWaveTexture().get() ? m_settings->GetMeadowWaveTexture() : m_defaultMeadowWaveTexture));
+
+    AZ::Render::RayTracingFeatureProcessor* rayTracingFeatureProcessor =
+        GetParentScene()->GetFeatureProcessor<AZ::Render::RayTracingFeatureProcessor>();
+    rayTracingFeatureProcessor->UpdateRayTracingEnvSrgs(m_settings->GetEnabledWind(), m_settings->GetWindVector());
+}
+```
+
+About the shader, we would add a special `COLOR` input as a optional value. `m_optional` prefix gets set automatically by the system at runtime only if it's available.
+
+```c++
+// ---------- Vertex Shader ----------
+
+struct VSInput
+{
+    // Base fields (required by the template azsli file)...
+    float3 m_position : POSITION;
+    float3 m_normal : NORMAL;
+    float4 m_tangent : TANGENT;
+    float3 m_bitangent : BITANGENT;
+
+    // Extended fields (only referenced in this azsl file)...
+    float2 m_uv0 : UV0;
+    float2 m_uv1 : UV1;
+    // Add the color attribute as a optional value
+    float4 m_optional_vertexColor : COLOR;
+};
+```
+
+In the vertex shader entry function, we add a snippet to call `ApplyWindAnimation` function to change the world position of this vertex. 
+
+```c++
+VSOutput EnhancedPbr_ForwardPassVS(VSInput IN)
+{
+    VSOutput OUT;
+	
+    ...
+        
+    float4x4 objectToWorld = GetObjectToWorld();
+    float4 worldPosition = mul(objectToWorld, float4(IN.m_position, 1.0));
+	
+    // Add the wind animation snippet
+    if (o_enableWindAnimation) {
+        float3 vPos = worldPosition.xyz;
+        if (o_vertexColor_isBound) {
+            ApplyWindAnimation(vPos, IN.m_normal, IN.m_optional_vertexColor, objectToWorld);
+        } else {
+            ApplyWindAnimation(vPos, IN.m_normal, float4(0.0, 0.0, 0.0, 1.0), objectToWorld);
+        }
+        worldPosition.xyz = vPos;
+    }
+    
+    ...
+}
+```
+
+In function `ApplyWindAnimation`, the detail implementations are just following the explanations in the feature design description.
+
+
+### What are the advantages of the feature?
+- It is possible to achieve realistic wind animation for vegetation in enormous natural scene. Each plant instance can has its own animation state with the same global wind vector.
+- Any other gem which responses to this component could get the wind related settings. As I know, the water system developed by our team now makes use of the wind settings to provide effect of the water wave, which will be contributed to the community too.
+- The presented wind animation technique is implemented in a general way, so it is possible to apply wind forces even to non-vegetation objects, such as cloth, the only difference is that no main bending is used for these cases.
+
+### What are the disadvantages of the feature?
+- It is a little difficult to bring up a very good effect because there are so many combinations from all parameters provided. It's possible that we don't need some parameters.
+- Adding vertex deformation will have some minimal performance impact.
+
+### How will this be implemented or integrated into the O3DE environment?
+We need to merge a new gem into O3DE with modifications of CMake lists. Besides, some updates about EnhancedPBR materialtype should be merged.
+
+### Are there any alternatives to this feature?
+- Maybe it is more better to create a new materialtype to implement wind animation. Now the SSS effect for vegetation in O3DE, especially leaves,  is also not quite as desirable. Our team currently try to implement a new SSS algorithm for two sided leaves rendering. When that is done, we could combine both the wind animation and SSS for leaves into a new vegetation materialtype.
+- If the material canvas is fully available, it is an option to move wind animation implementation into material canvas as a common canvas node.
+- Now the gem only supports global wind settings, but could extend to add more environment settings. 
+
+### How will users learn this feature?
+Once this proposal is passed, documents will be provided for users and developers to learn this feature. This feature can be added in [USER GUIDE](https://www.o3de.org/docs/user-guide/gems/reference/) to let them know how to add the component and [PBR Materials](https://www.o3de.org/docs/atom-guide/look-dev/materials/pbr/) to let them know how to adjust the wind animation parameters in material editor.
+
+### Are there any open questions?
+* The animation methods introduced here is a little old. There may be some better techniques now.
+* Is it appropriate to place this component editor in the `Level` editor, since we may need to set several different wind sources with different world positions?
+* How to add single character interactive response for single plant? How about for multiple plants simultaneously? How about adding multiple character interactions in a meadow?
+* Is there any possibility to introduce SpeedTree to provide a complete and detailed vegetation animation system?
