@@ -7,7 +7,7 @@ As shown in the diagram below our current solution goes through three steps for 
 * Step2: SPIR-V → MSL
 * Step3: MSL → Metal bytecode library
 
-[Image: image.png]
+![ShaderPipeline](./ShaderPipeline.png)
 **Problems** 
 
 1. Issue 1- Shader pipeline throughput. While a couple extra steps to compile an individual shader doesn’t *seem* like much on the surface, AAA titles can compile up to (or beyond) a *million* such shaders to package a title for a single RHI. This number shrinks for engines that don’t permit fully dynamic material assignment, but is actually realistic for engines that do (which includes Unreal Engine for example). Such titles can take easily hours to package on a single machine. Those extra steps above is a strict multiplicative factor on top of an already slow and expensive process. Compiling a material shader on Windows to go from HLSL to DXIL takes on the order of 1 to 2 seconds (empirical measurement taken across several engines). Compiling the same shader for Metal can take over 5 seconds depending.
