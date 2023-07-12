@@ -150,6 +150,7 @@ So the root constant data can be encoded directly into the top level/root signat
 Due to the fact that we will need Argument Buffer Tier 2 support using the root signature approach via Shader converter is only applicable to Iphone11 and above devices. In theory this wouldn't be a bigger concern if we still preserve the current system of binding resources and at runtime we can switch to new binding capability based on the fact that AB tier 2 is supported. The problem arises from maintaining multiple byte code for the same shader as the layout will be different when using the existing system vs using the root signature. So the shader pipeline will need to create and spit out 2 byte codes for each shader variant/super variant and that is going to be problematic. This will add to shader compilation time and not to mention runtime shader loading code issues. 
 
 * One option is to just build the byte code metal library at run time (for devices that support AB2) but this is not efficient as you are now spending time at runtime during boot up and front end to back end load which could have been moved to offline. 
+* We can also consider only supporting this shader converter for shaders that use more advanced feature like Ray tracing, unbounded arrays, mesh shaders, tessellation, etc. So the shader pipeline will switch to using root signature if the shader is using advanced features and the runtime will switch to the appropriate layout as needed. This will allow us to support ios below iphone8 as well as support advanced features like terrain, global illuminaiton via Diffuse probe grids, etc. 
 
 
 **Pros**
@@ -182,4 +183,10 @@ Due to the fact that we will need Argument Buffer Tier 2 support using the root 
 * Task 7 - Extend shader pipeline to hold two byte codes, one with the layout of the current system and another with the layout that uses root signature. 
 
  
+
+Extra Notes 
+
+- Pinged Apple for a ticket related to GPU capture being broken when captured with validaiton layer enabled
+- Pinged Apple for a ticket related to Shader debugging source in a gpu cpature
+- Pinged Apple for a ticket related to Argument Buffer's need to link directly to the resource within a gpu capture
 
