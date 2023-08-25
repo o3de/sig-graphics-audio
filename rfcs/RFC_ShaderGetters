@@ -1,0 +1,16 @@
+Problem
+Currently the Surface structure in AZSL uses direct access to members like surface.normal. However, certain surfaces may present multiple normals, like clearcoat, or have different normals for diffuse and specular, like bent normals. This assumption blocks flexibility, for example area light code assumes and uses a single normal, making it difficult to implement materials that may have multiple normal/roughness/other values.
+Another issue for example is we store 3 floats in Surface SpecularF0, when non-metals only need to store one.
+
+Proposed Solution
+Wrap access to certain members in Getters, so that we can abstract certain aspects of materials and allow for greater flexibility. For example
+real3 GetDiffuseNormal() { return normal; }
+real3 GetSpecularNormal() { return normal; }
+real3 GetSpecularF0() { return SpecularF0.rrr; }
+This small abstraction allows greater customization and optimization of material shaders, as now the code using these variables need only rely on the fact that the Surface has a function that provides the value, without caring about the underlying value.
+
+Drawbacks
+The PR won't change the names of any existing variables, so non-core O3DE code can still refer to the base variables without breaking.
+However material types and shaders with surfaces outside of core O3DE code that cannot be addressed in the initial PR will break and need to be amended with functions like GetDiffuseNormal and GetSpecularF0.
+Will coordinate on Discord see how many people may potentially be impacted.
+
