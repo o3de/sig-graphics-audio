@@ -113,3 +113,4 @@ Deep down the line each `AZ::Vulkan::Scope` stores the shared pointer and the `A
 
 The following timeline diagram illustrate how the pieces fit together:  
 
+![RPI::ParentPass Subpass Layout constrution](ParentPass_SubpassLayout.PNG)
