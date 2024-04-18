@@ -15,7 +15,7 @@ Merging several Raster Passes as a sequence of Subpasses is one option available
 # O3DE Background History - Vulkan RHI
 In order to understand the proposed solution, it is very important to go over a few touch points on how the RPI and RHI work together to define the Frame Graph and how it gets executed.  
   
-Each time the RPI initializes a Shader, it also instantiates a Pipeline State Object (aka PSO) for a given Shader (for a given Shader Variant to be precise). Vulkan requires a VkRenderPass to instantiate a PSO:  
+Each time the RPI initializes a Shader, it also instantiates a Pipeline State Object (aka PSO) for the given Shader (for a given Shader Variant to be precise). Vulkan requires a VkRenderPass to instantiate a PSO:  
 ```
 // Internally, the RHI creates or re-uses a VkRenderPass to create ShaderPSO.
 ShaderPSO = Shader->AcquirePipelineState()
@@ -55,7 +55,7 @@ CmdBeginRenderPass(VkRenderPassD) //Scope of Raster Pass B
     CmdDraw(...)
 CmdEndRenderPass() 
 ```
-The example aboved worked fine because `VkRenderPassC` was compatible with `VkRenderPassA`, and `VkRenderPassD` was compatible with `ShaderPSOB`.  
+The example above worked fine because `VkRenderPassC` was compatible with `VkRenderPassA`, and `VkRenderPassD` was compatible with `ShaderPSOB`.  
   
 Let's go over the final example, where we assume that `Raster Pass A` & `Raster Pass B` are mergeable as subpasses:  
 ```
@@ -85,7 +85,7 @@ For this final example to work well, all VkRenderPasses must be compatible: VkRe
 There are many considerations in this solution:  
 
 ## Solution to Shareable Render Attachment Layouts
-So far each RPI::Pass has been constructing their Render Attachment Layouts in isolation (See AZ::RPI::RenderPass::GetRenderAttachmentConfiguration()) and it is precisely the Render Attachment Layout what contains all the data that describes Render Attachments and dependecies for each subpass.  
+So far each RPI::Pass has been constructing their Render Attachment Layouts in isolation (See `AZ::RPI::RenderPass::GetRenderAttachmentConfiguration()`) and it is precisely the Render Attachment Layout what contains all the data that describes Render Attachments and dependecies for each subpass.  
 The new change in the Pass asset is that `PassData` contains a new field called `"MergeChildrenAsSubpasses"`, which the `RPI::ParentPass` class can use to merge/combine a list of `RPI::RasterPass` as subpasses. The benefit of delegating the responbility to `RPI::ParentPass` is that it can sequentially build a single AZ::RHI::RenderAttachmentLayout for all the child passes that it is supposed to merge.  
 
 The major piece of work is encompassed by the new function:   `AZ::RPI::ParentPass::CreateRenderAttachmentConfigurationForSubpasses()`.  
@@ -111,6 +111,43 @@ RasterPasses that are being merged will call:
 ```
 Deep down the line each `AZ::Vulkan::Scope` stores the shared pointer and the `AZ::Vulkan::RenderPassBuilder` would check if the shared pointer is valid and use it to create the VkRenderPass.  
 
-The following timeline diagram illustrate how the pieces fit together:  
+The following timeline diagram illustrates how the `RHI::SubpassDependencies` handle is created during `RPI::ParentPass::BuildInternal()`:  
 
 ![RPI::ParentPass Subpass Layout constrution](ParentPass_SubpassLayout.PNG)
+  
+
+In the next, second phase, RPI::RasterPass, when marked as a subpass, forwards the `RHI::SubpassDependencies` handle during FrameGraph compilation. This is the timeline:  
+
+![FrameGraph SubpassDependencies](FrameGraph_SubpassDependencies.PNG)  
+  
+The key event in the picture, above, is when `RPI::RasterPass` calls `frameGraph.UseSubpassDependencies(m_subpassDependencies)`, because that's when each `AZ::Vulkan::Scope` gets a copy of the `AZStd::shared_ptr<RHI::SubpassDependencies>`, which will be used later when creating the VkRenderPass.
+
+In the final, third phase, this is the callstack on how the `AZStd::shared_ptr<RHI::SubpassDependencies>` of the **last** `AZ::Vulkan::Scope` is utilized to have all the data required to build a `VkRenderPass`:
+```cpp
+AZ::Vulkan::RenderPassBuilder::AddScopeAttachments(const AZ::Vulkan::Scope & scope)
+{
+    ...
+    const auto* prebuiltSubpassDependencies = scope.GetNativeSubpassDependencies();
+    if (prebuiltSubpassDependencies != nullptr)
+    {
+        if (prebuiltSubpassDependencies->m_subpassCount == m_renderpassDesc.m_subpassCount)
+        {
+            prebuiltSubpassDependencies->ApplySubpassDependencies(m_renderpassDesc);
+        }
+    }
+    ...
+}
+
+>	Atom_RHI_Vulkan.Private.dll!AZ::Vulkan::RenderPassBuilder::AddScopeAttachments(const AZ::Vulkan::Scope & scope) Line 303	C++
+ 	Atom_RHI_Vulkan.Private.dll!AZ::Vulkan::FrameGraphExecuteGroupSecondaryHandler::InitInternal(AZ::Vulkan::Device & device, const AZStd::vector<AZ::RHI::FrameGraphExecuteGroup *,AZStd::allocator> & executeGroups) Line 30	C++
+ 	Atom_RHI_Vulkan.Private.dll!AZ::Vulkan::FrameGraphExecuteGroupHandler::Init(AZ::Vulkan::Device & device, const AZStd::vector<AZ::RHI::FrameGraphExecuteGroup *,AZStd::allocator> & executeGroups) Line 25	C++
+ 	Atom_RHI_Vulkan.Private.dll!AZ::Vulkan::FrameGraphExecuter::AddExecuteGroupHandler(const AZ::RHI::Handle<unsigned int,AZ::RHI::DefaultNamespaceType> & groupId, const AZStd::vector<AZ::RHI::FrameGraphExecuteGroup *,AZStd::allocator> & groups) Line 254	C++
+ 	Atom_RHI_Vulkan.Private.dll!AZ::Vulkan::FrameGraphExecuter::BeginInternal(const AZ::RHI::FrameGraph & frameGraph) Line 208	C++
+ 	Atom_RPI.Editor.dll!AZ::RHI::FrameGraphExecuter::Begin(const AZ::RHI::FrameGraph & frameGraph) Line 72	C++
+ 	Atom_RPI.Editor.dll!AZ::RHI::FrameScheduler::Compile(const AZ::RHI::FrameSchedulerCompileRequest & compileRequest) Line 218	C++
+ 	Atom_RPI.Editor.dll!AZ::RHI::RHISystem::FrameUpdate(AZStd::function<void __cdecl(AZ::RHI::FrameGraphBuilder &)> frameGraphCallback) Line 247	C++
+ 	Atom_RPI.Editor.dll!AZ::RPI::RPISystem::RenderTick() Line 357	C++
+ 	Atom_RPI.Editor.dll!AZ::RPI::RPISystemComponent::OnSystemTick() Line 184	C++
+
+```
+In the code snippet shown above, `scope.GetNativeSubpassDependencies()` returns the  `Vulkan::SubpassDependencies*`, which is the concrete implementation that the Vulkan RHI creates for the `RHI::SubpassDependencies` handle.
