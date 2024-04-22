@@ -22,7 +22,7 @@ ShaderPSO = Shader->AcquirePipelineState()
 ```
 In the pseudo code mentioned above let's assume the Vulkan RHI created a private `VkRenderPass0`.
 
- Later when the Vulkan RHI compiles the Scopes it creates a new `VkRenderPass1` and when submitting Draw commands the following pseudo code happens:
+ Later, when the Vulkan RHI compiles the Scopes, it creates a new `VkRenderPass1` and when submitting Draw commands the following pseudo code happens:
 ```
 CmdBeginRenderPass(VkRenderPass1)
     CmdBindPSO(ShaderPSO)
@@ -33,7 +33,7 @@ And here comes the first lesson, Vulkan does NOT require `VkRenderPass0` and `Vk
 
 In the example above, `VkRenderPass0` is created with help of the API `AZ::RHI::Vulkan::RenderPass::ConvertLayoutAttachment()`, while `VkRenderPass1` is created by a different code path: `AZ::RHI::Vulkan::RenderPassBuilder`. The key takeaway is that because there was no subpass support exposed to the RPI it was relatively easy that two different code paths end up creating compatible VkRenderPasses.  
 
-Let's go over a slightly more complicated scenarion where two consecutive Raster Passes are executed by the RHI.
+Let's go over a slightly more complicated scenario where two consecutive Raster Passes are executed by the RHI.
 Also let's assume each Raster Pass have their own shader:  
 ```
 // Somewhere in the RPI at initialization time:
@@ -95,45 +95,35 @@ The reason this is the best time to call this function is because the RPI has no
 Also  `AZ::RPI::RenderPass::GetRenderAttachmentConfiguration()` was changed to `virtual`. This allows RPI::RasterPass to override `GetRenderAttachmentConfiguration()` and returned the Render Attachment Configuration that was built with help of `RPI::ParentPass`.
 
 ## Solution to Subpass Dependencies
-As mentioned already, it is a burden to have two different code paths, and guarantee that they both will create the exact same set of bitflags that make a set of VkSubpassDepency's. Another problem is that We need to have APIs that the RPI can use, which should decouple from the intricacies of the Vulkan RHI... Introducing `AZ::RHI::SubpassDependencies`. This abstract class will serve as an opaque handle returned by each RHI that supports Subpasses. In particular, for Vulkan, a concrete implementation will be `AZ::Vulkan::SubpassDependencies: public AZ::RHI::SubpassDependencies`.  
+As mentioned already, it is a burden to have two different code paths, and guarantee that they both will create the exact same set of bitflags that make a set of VkSubpassDepency's. Another problem is that We need to have APIs that the RPI can use, which should decouple from the intricacies of the Vulkan RHI.  
 
-The `RPI::ParentPass` will build the RenderAttachmentLayout for each subpass with the help of `RHI::RenderAttachmentLayoutBuilder` which in turn will invoke the NEW `AZ::Interface` named `AZ::RHI::SubpassDependenciesBuilderInterface` which provides the function:  
+The `RPI::ParentPass` will build the RenderAttachmentLayout for each subpass with the help of `RHI::RenderAttachmentLayoutBuilder` which in turn will invoke the NEW `AZ::Interface` named `AZ::RHI::RenderAttachmentLayoutNotificationsInterface` which provides the function:  
 ```cpp
-virtual AZStd::shared_ptr<SubpassDependencies> BuildSubpassDependencies(const RHI::RenderAttachmentLayout& layout) const = 0;
+//! Reports a list of Subpasses that are using the same RenderAttachmentLayout.
+virtual void SetLayoutForSubpasses(const AZStd::vector<ScopeId>& scopeIds , const RHI::RenderAttachmentLayout& layout) = 0;
 ```
-The returned shared pointer will be shared by all Child Passes of type RPI::RasterPass, which they will later use when the FrameScheduler calls `RPI::Pass::SetupFrameGraphDependencies(RHI::FrameGraphInterface frameGraph)`.  
-RasterPasses that are being merged will call: 
-```cpp
-    if (m_subpassDependencies)
-    {
-        frameGraph.UseSubpassDependencies(m_subpassDependencies);
-    }
-```
-Deep down the line each `AZ::Vulkan::Scope` stores the shared pointer and the `AZ::Vulkan::RenderPassBuilder` would check if the shared pointer is valid and use it to create the VkRenderPass.  
-
-The following timeline diagram illustrates how the `RHI::SubpassDependencies` handle is created during `RPI::ParentPass::BuildInternal()`:  
+The `RHI::RenderAttachmentLayoutBuilder` will call `RenderAttachmentLayoutNotificationsInterface::SetLayoutForSubpasses(...)` when building a RenderAttachmentLayout. This will give an opportunity to the current RHI to do "something" with such notification. In particular, for Vulkan, this notification will be used to create an  `AZ::Vulkan::SubpassDependencies` that several subpasses, identified by their `RHI::ScopeId`, will share. The many-to-one relation between subpass ScopeIds and their SubpassDependencies will be stored in a HashMap, which is private and specific to the Vulkan RHI. This HashMap will be owned and managed by a new singleton called `AZ::Vulkan::SubpassDependenciesManager`.
+  
+Deep down the line, when each `AZ::Vulkan::RenderPassBuilder` is invoked to create a VkRenderPass for a set of subpasses, it will check is there's `AZ::Vulkan::SubpassDependencies` stored in `AZ::Vulkan::SubpassDependenciesManager`. If there's an `AZ::Vulkan::SubpassDependencies`, it will be used to create the VkRenderPass.  
+  
+The following timeline diagram illustrates how the `RHI::RenderAttachmentLayoutNotificationsInterface` interface is used during `RPI::ParentPass::BuildInternal()`:  
 
 ![RPI::ParentPass Subpass Layout constrution](ParentPass_SubpassLayout.PNG)
+In the picture, above, when `RHI::RenderAttachmentLayoutNotificationsInterface::SetLayoutForSubpasses` is called, the Vulkan implementation will create a `shared_ptr<AZ::Vulkan::SubpassDependencies>` and store the shared pointer for each ScopeId in the list in a HashMap, which is owned by `AZ::Vulkan::SubpassDependenciesManager`.
   
-
-In the next, second phase, RPI::RasterPass, when marked as a subpass, forwards the `RHI::SubpassDependencies` handle during FrameGraph compilation. This is the timeline:  
-
-![FrameGraph SubpassDependencies](FrameGraph_SubpassDependencies.PNG)  
-  
-The key event in the picture, above, is when `RPI::RasterPass` calls `frameGraph.UseSubpassDependencies(m_subpassDependencies)`, because that's when each `AZ::Vulkan::Scope` gets a copy of the `AZStd::shared_ptr<RHI::SubpassDependencies>`, which will be used later when creating the VkRenderPass.
-
-In the final, third phase, this is the callstack on how the `AZStd::shared_ptr<RHI::SubpassDependencies>` of the **last** `AZ::Vulkan::Scope` is utilized to have all the data required to build a `VkRenderPass`:
+In the final, second phase, this is the callstack on how `AZ::Vulkan::RenderPassBuilder` discovers the `AZStd::shared_ptr<AZ::Vulkan::SubpassDependencies>` that should be used to build a `VkRenderPass`:
 ```cpp
 AZ::Vulkan::RenderPassBuilder::AddScopeAttachments(const AZ::Vulkan::Scope & scope)
 {
     ...
-    const auto* prebuiltSubpassDependencies = scope.GetNativeSubpassDependencies();
-    if (prebuiltSubpassDependencies != nullptr)
+    if ((m_subpassCount > 1) && (m_subpassCount == m_renderpassDesc.m_subpassCount))
     {
-        if (prebuiltSubpassDependencies->m_subpassCount == m_renderpassDesc.m_subpassCount)
-        {
-            prebuiltSubpassDependencies->ApplySubpassDependencies(m_renderpassDesc);
-        }
+        const auto subpassDependenciesPtr = SubpassDependenciesManager::GetInstance().GetSubpassDependencies(scope.GetId());
+        AZ_Assert(subpassDependenciesPtr != nullptr, "Subpass Dependencies for scope [%s] do not exist.", scope.GetId().GetCStr());
+        AZ_Assert(subpassDependenciesPtr->m_subpassCount == m_subpassCount,
+            "Subpass Dependencies for scope [%s] was created for %u subpasses, but this Render Pass is being created with %u subpasses",
+            scope.GetId().GetCStr(), subpassDependenciesPtr->m_subpassCount, m_subpassCount);
+        subpassDependenciesPtr->CopySubpassDependencies(m_renderpassDesc.m_subpassDependencies);
     }
     ...
 }
@@ -150,4 +140,4 @@ AZ::Vulkan::RenderPassBuilder::AddScopeAttachments(const AZ::Vulkan::Scope & sco
  	Atom_RPI.Editor.dll!AZ::RPI::RPISystemComponent::OnSystemTick() Line 184	C++
 
 ```
-In the code snippet shown above, `scope.GetNativeSubpassDependencies()` returns the  `Vulkan::SubpassDependencies*`, which is the concrete implementation that the Vulkan RHI creates for the `RHI::SubpassDependencies` handle.
+In the code snippet shown above, `SubpassDependenciesManager::GetInstance().GetSubpassDependencies(scope.GetId())` will do a quick HashMap look up, and if the ScopeId is found, returns the  `Vulkan::SubpassDependencies*` that should be used to create the VkRenderPass.
