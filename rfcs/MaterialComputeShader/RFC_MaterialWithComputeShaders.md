@@ -28,10 +28,10 @@ So far it doesn't look any different than a typical Raster (VS+PS) shader templa
 {
     "Source" : "TEMPLATE_AZSL_PATH",
     // The shader code historically assumed the shaders are pixel shader,
-    // but this is a compute shader. With the SAMPLE_LEVEL_LOD macro, the shader code
-    // will call Texture2D.SampleLevel() instead of Texture2D.Sample()
+    // but this is a compute shader. With the CS_SAMPLERS macro, the shader code
+    // will call Texture2D.SampleLevel(coord, 0) instead of Texture2D.Sample(coord)
     "Definitions": [
-        "SAMPLE_LEVEL_LOD=0"
+        "CS_SAMPLERS"
     ],
 
     "ProgramSettings":
@@ -49,9 +49,11 @@ So far it doesn't look any different than a typical Raster (VS+PS) shader templa
 }
 ```
 Two things are unique when compared to all other *.shader.template files that ship with O3DE:
-- The `SAMPLE_LEVEL_LOD=0` macro definition, which, as explained in the comment, will make sure
-that all the shader code will call Texture2D.SampleLevel(coord, SAMPLE_LEVEL_LOD) instead of
- Texture2D.Sample(coord).
+- The `CS_SAMPLERS` macro definition, which, as explained in the comment, will make sure
+that all the shader code will call Texture2D.SampleLevel(coord, 0) instead of
+ Texture2D.Sample(coord). This good enough at the moment to avoid DXC compilation issues.
+BUT, in the future which function to call like SampleLevel or SampleGrad will be improved
+to provide more flexibility when shading.
 - There's only one entry point of type `Compute`, in this case called `MainCS`.
   
 ## 3. Here is the content of `MyComputeSkin.azsli`:  
@@ -298,7 +300,7 @@ impact to the existing PBR pipeline.
 This feature leverages the Culling system, so the Compute shaders will run on only the visible DrawItems (as DispatchItems).
 
 # What are the disadvantages of the feature?
-Minor disadvantages only. For example, the addition of Macros like `SAMPLE_LEVEL_LOD` throughout some of the O3DE PBR shaders
+Minor disadvantages only. For example, the addition of Macros like `CS_SAMPLERS` throughout some of the O3DE PBR shaders
 to prevent compilation errors related to Compute shaders attemping to use the existing calls to Texture2D.Sample().
 
 Also this implementation is not 100% data driven. It requires custom subclases of `RPI::FeatureProcessor` and `RPI::RenderPass` to be able to create and use DispatchItems from DrawItems. But also this a strength of the solution because it has negligible impact in performance and C++ footprint to the Atom CommonFeature Gem. 
@@ -306,12 +308,14 @@ Also this implementation is not 100% data driven. It requires custom subclases o
 # How will this be implemented or integrated into the O3DE environment?
 New Public Interfaces will be added to the `Atom_Feature_Common.Public`.
 Concrete implementations will be added to `Atom_Feature_Common.Private.Object`.
-Some macro definition and `#ifdef SAMPLE_LEVEL_LOD` code changes throughout the O3DE PBR `*.azsli` files will be added
+Some macro definition and `#ifdef CS_SAMPLERS` code changes throughout the O3DE PBR `*.azsli` files will be added
 to prevent compilation errors. 
 
 # Are there any alternatives to this feature?
 More than alternatives, there may be enhancements in the future where the RPI can add support of a new subclass of `RPI::RenderPass`
 called sommething like `RPI::ComputeItemPass` and provide data driven mechanisms to define Total X,Y,Z Thread counts and also automate the creation of DispatchItems. But those new APIs will be relevant only if We start to notice more O3DE developers taking advantage of Compute Shader to render DrawItems.
+
+Also, in the future, the usability of the `CS_SAMPLERS` shader macro can be extended to support dynamic/flexible LOD selection, or instead of using SampleLevel(), provide the alternative of using SampleGrad().
   
 # How will users learn this feature?
 Since it will not require developers intervention, a simple announcement of the feature will suffice. Documentation will need to be updated to show how users can add Compute shaders to Material-related files.  
